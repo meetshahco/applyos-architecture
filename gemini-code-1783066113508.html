@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ApplyOS — Architecture v5.0 — Final</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --black:#0a0a0a;
+  --dark:#1c1c1c;
+  --mid:#4a4a4a;
+  --muted:#7a7a7a;
+  --dim:#aaaaaa;
+  --rule:#d8d8d8;
+  --surface:#f6f6f6;
+  --bg:#ffffff;
+}
+
+html{scroll-behavior:smooth}
+
+body{
+  background:var(--bg);
+  color:var(--dark);
+  font-family:'Inter',sans-serif;
+  font-weight:300;
+  font-size:14px;
+  line-height:1.6;
+}
+
+/* ── PROGRESS ── */
+#prog{position:fixed;top:0;left:0;height:2px;background:var(--black);z-index:500;width:0;transition:width .08s linear}
+
+/* ── LAYOUT (FIXED GRID BUG) ── */
+.shell{
+  display:grid;
+  grid-template-columns:216px minmax(0, 1fr);
+  min-height:100vh;
+  width:100%;
+}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  position:sticky;
+  top:0;left:0;width:216px;height:100vh;
+  overflow-y:auto;border-right:1px solid var(--rule);
+  padding:36px 0;background:var(--bg);
+}
+.sb-brand{padding:0 20px 20px;border-bottom:1px solid var(--rule);margin-bottom:16px}
+.sb-name{font-size:14px;font-weight:700;color:var(--black);letter-spacing:-.02em}
+.sb-ver{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+.sb-section{padding:0 12px 12px}
+.sb-label{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);padding:0 8px;margin-bottom:3px;display:block}
+.sb-link{display:block;padding:5px 8px;font-size:11px;font-weight:300;color:var(--muted);text-decoration:none;border-radius:3px;transition:color .12s,background .12s}
+.sb-link:hover{color:var(--black);background:var(--surface)}
+.sb-link.on{color:var(--black);font-weight:600;background:var(--surface)}
+
+/* ── MAIN ── */
+.main{
+  margin:0 auto; /* Centers the main content block within its grid column */
+  padding:72px 80px 120px;
+  max-width:940px;
+  width:100%;
+  min-width:0;
+}
+
+/* ── DOC HEADER ── */
+.doc-hd{margin-bottom:64px;padding-bottom:48px;border-bottom:2px solid var(--black)}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:14px;display:block}
+.doc-title{font-size:56px;font-weight:700;letter-spacing:-.04em;line-height:.95;color:var(--black);margin-bottom:14px}
+.doc-sub{font-size:15px;font-weight:300;color:var(--mid);max-width:540px;line-height:1.7;margin-bottom:28px}
+.meta-strip{display:flex;border:1px solid var(--rule)}
+.meta-cell{padding:8px 16px;border-right:1px solid var(--rule)}
+.meta-cell:last-child{border-right:none}
+.meta-k{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:2px}
+.meta-v{font-size:12px;font-weight:600;color:var(--dark)}
+
+/* ── SECTIONS ── */
+.section{margin-bottom:64px}
+h2{font-size:26px;font-weight:700;letter-spacing:-.03em;color:var(--black);margin-bottom:14px;line-height:1.1}
+h3{font-size:13px;font-weight:600;color:var(--dark);margin-bottom:8px;margin-top:28px;letter-spacing:-.01em}
+h3:first-child{margin-top:0}
+p{font-size:13px;color:var(--mid);line-height:1.75;margin-bottom:12px;max-width:600px;font-weight:300}
+p strong{color:var(--dark);font-weight:600}
+hr{border:none;border-top:1px solid var(--rule);margin:60px 0}
+
+/* ── VERSION BADGE ── */
+.vbadge{
+  display:inline-block;
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  padding:4px 10px;border:1.5px solid var(--black);
+  margin-bottom:12px;color:var(--black)
+}
+.vbadge.filled{background:var(--black);color:var(--bg)}
+
+/* ── STATUS CHIPS ── */
+.chip{
+  display:inline-block;
+  font-family:'JetBrains Mono',monospace;font-size:8px;
+  letter-spacing:.1em;text-transform:uppercase;
+  padding:2px 6px;border:1px solid;vertical-align:middle;margin-left:5px
+}
+.chip-done{border-color:var(--black);background:var(--black);color:var(--bg)}
+.chip-next{border-color:var(--dark);color:var(--dark)}
+.chip-plan{border-color:var(--dim);color:var(--dim)}
+
+/* ── CALLOUT ── */
+.callout{
+  border-left:3px solid var(--black);background:var(--surface);
+  padding:14px 18px;margin:18px 0;
+  font-size:12px;color:var(--mid);line-height:1.7;max-width:620px
+}
+.callout strong{color:var(--dark);font-weight:600}
+.callout.warn{border-color:var(--muted)}
+
+/* ── BUILD LIST ── */
+.blist{display:flex;flex-direction:column;gap:0;margin:14px 0;max-width:680px;border:1px solid var(--rule)}
+.bitem{display:grid;grid-template-columns:36px 1fr;gap:0;border-bottom:1px solid var(--rule);background:var(--bg)}
+.bitem:last-child{border-bottom:none}
+.bitem:hover{background:var(--surface)}
+.bcheck{padding:12px 0 12px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);display:flex;align-items:flex-start;padding-top:13px}
+.bcheck.ok{color:var(--black);font-weight:700}
+.binfo{padding:11px 14px 11px 0}
+.bname{font-size:12px;font-weight:600;color:var(--dark);margin-bottom:2px}
+.bdesc{font-size:11px;color:var(--muted);font-weight:300;line-height:1.5}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:12px;margin:14px 0;border:1px solid var(--rule)}
+.tbl th{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:8px 12px;text-align:left;border-bottom:1.5px solid var(--rule);font-weight:400;background:var(--surface)}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--rule);color:var(--mid);vertical-align:top;font-weight:300;line-height:1.5}
+.tbl td:first-child{color:var(--dark);font-weight:600;font-size:11px;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--surface)}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--rule);border:1px solid var(--rule);margin:14px 0}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;background:var(--rule);border:1px solid var(--rule);margin:14px 0}
+.gc{background:var(--bg);padding:18px}
+.gc:hover{background:var(--surface)}
+.gc-tag{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.gc-title{font-size:12px;font-weight:600;color:var(--dark);margin-bottom:4px}
+.gc-desc{font-size:11px;color:var(--muted);line-height:1.55;font-weight:300}
+
+/* ── REPO TREE ── */
+.tree{
+  background:var(--surface);border:1px solid var(--rule);
+  padding:20px 24px;font-family:'JetBrains Mono',monospace;
+  font-size:11px;line-height:2;max-width:640px;margin:14px 0;
+  overflow-x:auto;
+}
+.t-dir{color:var(--dark);font-weight:600}
+.t-done{color:var(--black);font-weight:600}
+.t-next{color:var(--mid)}
+.t-note{color:var(--dim);font-size:9.5px}
+
+/* ── SCORER GRID ── */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--rule);border:1px solid var(--rule);max-width:620px;margin:14px 0}
+.sdim{background:var(--bg);padding:13px 15px}
+.sdim:hover{background:var(--surface)}
+.sname{font-size:11px;font-weight:600;color:var(--dark);margin-bottom:3px}
+.sdesc{font-size:10px;color:var(--muted);line-height:1.5;font-weight:300}
+.sw{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);margin-top:5px}
+
+/* ── INHERITANCE ── */
+.iblock{border:1px solid var(--rule);margin:14px 0;max-width:640px}
+.ihead{background:var(--surface);padding:7px 13px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--rule)}
+.irow{display:grid;grid-template-columns:180px 1fr;border-bottom:1px solid var(--rule)}
+.irow:last-child{border-bottom:none}
+.iwhat{padding:9px 13px;font-size:11px;font-weight:600;color:var(--dark);border-right:1px solid var(--rule);background:var(--surface)}
+.ihow{padding:9px 13px;font-size:11px;color:var(--muted);font-weight:300}
+
+/* ── FLOW DIAGRAM ── */
+.flow-wrap{margin:24px 0;overflow-x:auto;border:1px solid var(--rule)}
+.flow-wrap svg{display:block; max-width:100%; height:auto;}
+
+/* ── DS DECISION BLOCK ── */
+.ds-decision{border:1px solid var(--rule);max-width:640px;margin:14px 0}
+.ds-row{display:grid;grid-template-columns:160px 1fr;border-bottom:1px solid var(--rule)}
+.ds-row:last-child{border-bottom:none}
+.ds-label{padding:10px 14px;font-size:11px;font-weight:600;color:var(--dark);border-right:1px solid var(--rule);background:var(--surface)}
+.ds-val{padding:10px 14px;font-size:11px;color:var(--muted);font-weight:300;line-height:1.55}
+
+/* ── EXECUTION MODES ── */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;background:var(--rule);border:1px solid var(--rule);margin:14px 0;max-width:680px}
+.mode-card{background:var(--bg);padding:18px}
+.mode-card.rec{background:var(--black)}
+.mode-card.rec .gc-tag,.mode-card.rec .gc-title,.mode-card.rec .gc-desc{color:#fff}
+.mode-card.rec .gc-tag{opacity:.6}
+.mode-card:hover{background:var(--surface)}
+.mode-card.rec:hover{background:#1c1c1c}
+.mode-tag{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.mode-title{font-size:12px;font-weight:600;color:var(--dark);margin-bottom:4px}
+.mode-desc{font-size:11px;color:var(--muted);line-height:1.55;font-weight:300}
+.mode-stats{display:flex;gap:0;border:1px solid var(--rule);margin-top:10px}
+.mode-stat{flex:1;padding:5px 8px;border-right:1px solid var(--rule);font-size:9px}
+.mode-stat:last-child{border-right:none}
+.mode-stat-k{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.mode-stat-v{font-size:10px;font-weight:600;color:var(--dark)}
+
+/* ── STEP LIST (for execution paths) ── */
+.steps{display:flex;flex-direction:column;border:1px solid var(--rule);margin:14px 0}
+.step{display:grid;grid-template-columns:28px 120px 1fr 88px;border-bottom:1px solid var(--rule);font-size:11px}
+.step:last-child{border-bottom:none}
+.step:hover{background:var(--surface)}
+.step-num{padding:9px 0 9px 10px;font-family:'JetBrains Mono',monospace;color:var(--dim);font-weight:600;font-size:10px}
+.step-where{padding:9px 8px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);border-right:1px solid var(--rule);background:var(--surface)}
+.step-what{padding:9px 10px;color:var(--mid);font-weight:300;line-height:1.5}
+.step-what strong{color:var(--dark);font-weight:600}
+.step-effort{padding:9px 10px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.04em;text-transform:uppercase;text-align:right;border-left:1px solid var(--rule);color:var(--muted)}
+.step-effort.auto{color:var(--black);font-weight:700}
+.step-effort.human{color:var(--dark);font-weight:600}
+
+/* ── SUMMARY STRIP ── */
+.sum-strip{display:flex;border:1px solid var(--rule);margin-top:12px}
+.sstat{flex:1;padding:10px 14px;border-right:1px solid var(--rule)}
+.sstat:last-child{border-right:none}
+.sstat-k{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:2px}
+.sstat-v{font-size:13px;font-weight:700;color:var(--black)}
+.sstat-s{font-size:9px;color:var(--muted);margin-top:1px}
+
+/* ── FAILURE TABLE ── */
+.fail-table{width:100%;border-collapse:collapse;font-size:11.5px;margin:14px 0;border:1px solid var(--rule)}
+.fail-table th{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1.5px solid var(--rule);background:var(--surface);font-weight:400}
+.fail-table td{padding:9px 10px;border-bottom:1px solid var(--rule);border-right:1px solid var(--rule);color:var(--mid);vertical-align:top;font-weight:300;line-height:1.5}
+.fail-table td:last-child{border-right:none}
+.fail-table tr:last-child td{border-bottom:none}
+.fail-table td:first-child{color:var(--dark);font-weight:600;font-size:10px;font-family:'JetBrains Mono',monospace}
+.fail-table tr:hover td{background:var(--surface)}
+
+/* ── GENERATE INTERNALS ── */
+.gen-internals{border:1px solid var(--rule);max-width:640px;margin:14px 0}
+.gen-header{background:var(--black);color:var(--bg);padding:10px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.02em}
+.gen-row{display:grid;grid-template-columns:140px 1fr;border-bottom:1px solid var(--rule)}
+.gen-row:last-child{border-bottom:none}
+.gen-row:hover{background:var(--surface)}
+.gen-module{padding:9px 13px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--dark);border-right:1px solid var(--rule);background:var(--surface)}
+.gen-what{padding:9px 13px;font-size:11px;color:var(--muted);font-weight:300;line-height:1.5}
+
+/* ── SCORER OUTPUT ── */
+.scorer-output{border:1px solid var(--rule);max-width:480px;margin:14px 0}
+.scorer-output-hd{background:var(--surface);padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--rule)}
+.scorer-score-row{display:grid;grid-template-columns:160px 1fr;border-bottom:1px solid var(--rule)}
+.scorer-score-row:last-child{border-bottom:none}
+.scorer-score-row:hover{background:var(--surface)}
+.scorer-dim-name{padding:8px 13px;font-size:11px;font-weight:500;color:var(--dark);border-right:1px solid var(--rule);background:var(--surface)}
+.scorer-dim-val{padding:8px 13px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mid)}
+.scorer-rec{background:var(--black);color:var(--bg);padding:12px 14px;font-size:12px;line-height:1.6}
+.scorer-rec strong{color:#fff;font-weight:600}
+
+/* ── SECTION HEADER (for execution path sub-sections) ── */
+.path-hd{background:var(--black);color:var(--bg);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:20px}
+.path-name{font-size:13px;font-weight:700;letter-spacing:-.01em}
+.path-tags{display:flex;gap:6px}
+.path-tag{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border:1px solid rgba(255,255,255,.3);color:#fff}
+.path-body{border:1px solid var(--rule);border-top:none;padding:18px;margin-bottom:8px}
+.path-desc{font-size:12px;color:var(--mid);line-height:1.7;margin-bottom:14px;max-width:620px}
+
+/* ── RESPONSIVE OVERRIDES ── */
+@media(max-width:1100px){
+  .main{padding: 64px 40px 120px;}
+}
+
+@media(max-width:860px){
+  .shell{display:flex;flex-direction:column;}
+  
+  .sidebar{
+    position:relative;
+    width:100%;
+    height:auto;
+    border-right:none;
+    border-bottom:1px solid var(--rule);
+    padding:24px 0;
+  }
+  .sb-brand{border-bottom:none;margin-bottom:0;padding:0 24px;}
+  .sb-section{padding:16px 24px 0;}
+  .sb-link{display:inline-block; margin: 0 4px 4px 0;}
+  
+  .main{padding:40px 24px 80px;}
+  .doc-title{font-size:42px;}
+  
+  .g2,.g3,.mode-grid,.sgrid{grid-template-columns:1fr;}
+  
+  .meta-strip,.sum-strip{flex-direction:column;}
+  .meta-cell,.sstat{border-right:none;border-bottom:1px solid var(--rule);width:100%;}
+  .meta-cell:last-child,.sstat:last-child{border-bottom:none;}
+  
+  .irow,.ds-row,.gen-row,.scorer-score-row{grid-template-columns:1fr;}
+  .iwhat,.ds-label,.gen-module,.scorer-dim-name{border-right:none;border-bottom:1px solid var(--surface);}
+  
+  .step{display:flex;flex-direction:column;padding:16px;gap:6px;}
+  .step-num{padding:0;}
+  .step-where{padding:0;background:transparent;border:none;font-size:11px;}
+  .step-what{padding:0;}
+  .step-effort{padding:0;text-align:left;border:none;}
+  
+  .tbl,.fail-table{display:block;overflow-x:auto;}
+}
+</style>
+</head>
+<body>
+<div id="prog"></div>
+<div class="shell">
+
+<!-- ── SIDEBAR ── -->
+<nav class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-name">ApplyOS</div>
+    <div class="sb-ver">Architecture v5.0 — Final</div>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">Foundation</span>
+    <a class="sb-link" href="#overview">Overview</a>
+    <a class="sb-link" href="#positioning">Positioning</a>
+    <a class="sb-link" href="#principles">Principles</a>
+    <a class="sb-link" href="#brainstorm">The brainstorm</a>
+    <a class="sb-link" href="#opportunity">Opportunity model</a>
+    <a class="sb-link" href="#knowledge">Knowledge layer</a>
+    <a class="sb-link" href="#ds">Design system layer</a>
+    <a class="sb-link" href="#scorer">Confidence scorer</a>
+    <a class="sb-link" href="#artifacts">Artifact chain</a>
+    <a class="sb-link" href="#generate-internals">generate.js internals</a>
+    <a class="sb-link" href="#failure">Failure recovery</a>
+    <a class="sb-link" href="#repo">Repo structure</a>
+    <a class="sb-link" href="#status">Build status</a>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">Execution modes</span>
+    <a class="sb-link" href="#exec-modes">Overview</a>
+    <a class="sb-link" href="#mode-fallback">Fallback mode</a>
+    <a class="sb-link" href="#mode-hybrid">Hybrid mode</a>
+    <a class="sb-link" href="#mode-studio">Local studio</a>
+    <a class="sb-link" href="#mode-private">Private mode</a>
+    <a class="sb-link" href="#mode-platform">Platform mode</a>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">MVP</span>
+    <a class="sb-link" href="#mvp">Overview</a>
+    <a class="sb-link" href="#mvp-flow">User flow</a>
+    <a class="sb-link" href="#mvp-build">Build list</a>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">V1 — Open source</span>
+    <a class="sb-link" href="#v1">Overview</a>
+    <a class="sb-link" href="#v1-profile">Profile building</a>
+    <a class="sb-link" href="#v1-flow">User flow</a>
+    <a class="sb-link" href="#v1-inherits">Inheritance</a>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">V2 — Multi-agent</span>
+    <a class="sb-link" href="#v2">Overview</a>
+    <a class="sb-link" href="#v2-agents">Agent roster</a>
+    <a class="sb-link" href="#v2-flow">User flow</a>
+    <a class="sb-link" href="#v2-platform">Platform tiers</a>
+    <a class="sb-link" href="#v2-inherits">Inheritance</a>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">V3 — Composable</span>
+    <a class="sb-link" href="#v3">Overview</a>
+    <a class="sb-link" href="#v3-flow">User flow</a>
+    <a class="sb-link" href="#v3-inherits">Inheritance</a>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">Product</span>
+    <a class="sb-link" href="#story">Story memory</a>
+    <a class="sb-link" href="#tiers">Product tiers</a>
+    <a class="sb-link" href="#mcp">MCP layer</a>
+    <a class="sb-link" href="#roadmap">Roadmap</a>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<main class="main">
+
+<!-- HEADER -->
+<div class="doc-hd" id="overview">
+  <span class="eyebrow">Architecture Document — v5.0 — Final — June 2026</span>
+  <div class="doc-title">ApplyOS</div>
+  <p class="doc-sub">A career operating system that captures a professional's experience as structured knowledge, collaborates with them to choose the strongest narrative for each opportunity, and generates personalised application assets while learning from every outcome.</p>
+  <div class="meta-strip">
+    <div class="meta-cell"><div class="meta-k">Status</div><div class="meta-v">MVP in build</div></div>
+    <div class="meta-cell"><div class="meta-k">Version</div><div class="meta-v">5.0 — Final</div></div>
+    <div class="meta-cell"><div class="meta-k">Updated</div><div class="meta-v">June 2026</div></div>
+    <div class="meta-cell"><div class="meta-k">Architecture locked</div><div class="meta-v">Build now</div></div>
+  </div>
+</div>
+
+<!-- POSITIONING -->
+<div class="section" id="positioning">
+  <span class="eyebrow">01 — Positioning</span>
+  <h2>The repository is the product</h2>
+  <p>ApplyOS is not a landing page generator. The landing page is an artifact — the most visible output of a system whose real value is the structured career knowledge base underneath it, the conversation that selects the right narrative for each opportunity, and the learning loop that improves with every application outcome.</p>
+  <p>The elegance of the architecture is this: every component is a file. <code>profile.json</code> is your career. <code>content_brief.json</code> is your narrative decision. <code>execution_plan.json</code> is the build specification. <code>applications.json</code> is your outcome history. The repo is the product. Everything else is infrastructure that reads and writes files.</p>
+  <div class="callout">
+    <strong>The pitch:</strong> ApplyOS is a career operating system that captures a professional's experience as structured knowledge, collaborates with them to choose the strongest narrative for each opportunity, and generates personalised application assets while learning from every outcome. The landing page is merely the most visible artifact. The intelligence is the product.
+  </div>
+</div>
+
+<hr/>
+
+<!-- PRINCIPLES -->
+<div class="section" id="principles">
+  <span class="eyebrow">02 — Principles</span>
+  <h2>What never changes</h2>
+  <div class="g2" style="max-width:620px">
+    <div class="gc"><div class="gc-tag">01</div><div class="gc-title">One input per run</div><div class="gc-desc">The only thing that changes per application is the JD. All context is pre-loaded from the repo. The system reads, not asks.</div></div>
+    <div class="gc"><div class="gc-tag">02</div><div class="gc-title">No hallucination tolerance</div><div class="gc-desc">Every claim on a deployed page traces to profile.json. The validator enforces this. Wrong facts are worse than no page.</div></div>
+    <div class="gc"><div class="gc-tag">03</div><div class="gc-title">Tool agnostic</div><div class="gc-desc">No AI tool is prescribed. Claude, Cursor, Antigravity, direct HTML edit — any tool that can edit a file works in this system.</div></div>
+    <div class="gc"><div class="gc-tag">04</div><div class="gc-title">File is the interface</div><div class="gc-desc">The HTML file is what gets tweaked, watched, versioned, deployed. The file watcher bridges editing and deployment without prescribing a tool.</div></div>
+    <div class="gc"><div class="gc-tag">05</div><div class="gc-title">Human at the angle</div><div class="gc-desc">The brainstorm is not a gate — it is the product. Automation handles deterministic work. The designer decides what story to lead with.</div></div>
+    <div class="gc"><div class="gc-tag">06</div><div class="gc-title">Profile compounds</div><div class="gc-desc">profile.json is a living artifact. One case study today, three tomorrow. Every update makes every future application better without rebuilding anything.</div></div>
+  </div>
+</div>
+
+<hr/>
+
+<!-- THE BRAINSTORM -->
+<div class="section" id="brainstorm">
+  <span class="eyebrow">03 — The Brainstorm</span>
+  <h2>This is the product</h2>
+  <p>GPT can generate pages. Claude can write copy. Cursor can edit HTML. None of them do what the brainstorm does: a structured conversation where an AI proposes a specific narrative angle for a specific person's career against a specific role, and the human decides. That interaction is the IP that cannot be replicated by a simpler system.</p>
+  <p>The brainstorm produces two locked artifacts — <code>content_brief.json</code> (the narrative decision) and later in V3, <code>page_schema.json</code> (the structural decision). Everything downstream of these files is deterministic. Everything upstream is human judgment.</p>
+
+  <div class="g2" style="max-width:620px">
+    <div class="gc"><div class="gc-tag">Act 1</div><div class="gc-title">Who I am</div><div class="gc-desc">Emphasis selection: builder, researcher, founding designer, systems thinker, AI-native. One positioning line written for this company specifically.</div></div>
+    <div class="gc"><div class="gc-tag">Act 2</div><div class="gc-title">What I've done</div><div class="gc-desc">2–3 proof of works selected and framed for this domain. FinTech role: KwikPay leads. Builder role: ApplyOS appears. The framing angle, not just the story, is decided here.</div></div>
+    <div class="gc"><div class="gc-tag">Act 3</div><div class="gc-title">What I'll bring</div><div class="gc-desc">15 / 30 / 90 day commitments written for this specific role. Evaluable, specific, credibility-anchored. The section no other application includes.</div></div>
+    <div class="gc"><div class="gc-tag">DS decision</div><div class="gc-title">Design system direction</div><div class="gc-desc">Own DS or company DS? If company DS exists publicly (e.g. Blade, Polaris, Atlassian), the page adopts their visual identity. Decided in the brainstorm, recorded in the brief.</div></div>
+  </div>
+</div>
+
+<hr/>
+
+<!-- OPPORTUNITY MODEL -->
+<div class="section" id="opportunity">
+  <span class="eyebrow">03b — Opportunity Model</span>
+  <h2>Between JD and brainstorm</h2>
+  <p>The brainstorm should reason over a structured understanding of the company — not raw JD text. The Opportunity Model is an intermediate artifact produced automatically after JD analysis, before the brainstorm begins. It gives the brainstorm cleaner input and makes the reasoning reusable across future applications to the same company.</p>
+
+  <div class="callout">
+    <strong>Why this matters:</strong> raw JD text is noisy — generic HR language, boilerplate requirements, inconsistent formatting. The Opportunity Model extracts only what matters for narrative decisions: what the company is actually building, how mature their design function is, what they signal about their culture through their word choices, and what differentiated positioning would resonate.
+  </div>
+
+  <h3>Opportunity Model schema</h3>
+  <div class="tree">
+    opportunity_model.json<br/><br/>
+    {<br/>
+    &nbsp;&nbsp;"company": "Acme Corp",<br/>
+    &nbsp;&nbsp;"stage": "Series B", &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← inferred from JD + context</span><br/>
+    &nbsp;&nbsp;"design_maturity": "emerging", &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← nascent / emerging / mature / leading</span><br/>
+    &nbsp;&nbsp;"product_category": "B2B SaaS", &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← from domain analysis</span><br/>
+    &nbsp;&nbsp;"hiring_signal": "first senior IC hire", &nbsp;<span class="t-note">← what the role signals about the team</span><br/>
+    &nbsp;&nbsp;"cultural_tone": "builder-first", &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← from JD language analysis</span><br/>
+    &nbsp;&nbsp;"public_ds_url": null, &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← populated if found</span><br/>
+    &nbsp;&nbsp;"recommended_positioning": "founding designer operating system",<br/>
+    &nbsp;&nbsp;"differentiators": [<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;"Kuwait relocation = market-first research",<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;"SDUI = designer-led architecture",<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;"ApplyOS = builder identity in artefact form"<br/>
+    &nbsp;&nbsp;]<br/>
+    }
+  </div>
+
+  <h3>Where it sits in the pipeline</h3>
+  <div class="tree">
+    JD URL<br/>
+    &nbsp;&nbsp;↓<br/>
+    jd_analysis.json &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← raw extraction</span><br/>
+    &nbsp;&nbsp;↓<br/>
+    <span class="t-done">opportunity_model.json</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← structured reasoning ← NEW</span><br/>
+    &nbsp;&nbsp;↓<br/>
+    Profile Matcher → top 10 relevant stories<br/>
+    &nbsp;&nbsp;↓<br/>
+    Brainstorm → sees model + stories, not raw JD
+  </div>
+
+  <div class="callout warn">
+    <strong>Profile Matcher note:</strong> the brainstorm should receive the top 10 most relevant stories from profile.json — not the entire career history. As the profile grows to 40+ case studies, sending everything wastes context and adds noise. The Profile Matcher selects based on the opportunity model's signals before the brainstorm begins.
+  </div>
+</div>
+
+<hr/>
+
+<!-- KNOWLEDGE LAYER -->
+<div class="section" id="knowledge">
+  <span class="eyebrow">04 — Knowledge Layer</span>
+  <h2>The memory system</h2>
+  <p>All persistent data is organised into a single conceptual knowledge base. Every agent queries this layer rather than reading individual files ad hoc. This abstraction makes the eventual database migration clean — file paths change, query logic does not.</p>
+
+  <table class="tbl">
+    <thead><tr><th>Domain</th><th>File</th><th>Written by</th><th>Read by</th><th>Contains</th></tr></thead>
+    <tbody>
+      <tr><td>Career</td><td>profile.json</td><td>Designer + profile agent (V2)</td><td>Profile matcher, confidence scorer, brainstorm, codegen</td><td>Roles, case studies, signals, tone rules. Source of truth. Never auto-written without approval.</td></tr>
+      <tr><td>Applications</td><td>applications.json</td><td>generate.js + designer (outcomes)</td><td>Orchestrator, crawler, confidence scorer, analytics agent</td><td>Full application history with story performance data and outcome fields.</td></tr>
+      <tr><td>Feedback</td><td>next_steps.md</td><td>Analytics agent</td><td>Orchestrator on every run</td><td>What worked, what did not, what to weight differently next cycle.</td></tr>
+      <tr><td>Companies</td><td>crawler_seen.json</td><td>Crawler agent</td><td>Crawler agent</td><td>All JD URLs ever seen. Prevents duplicates surfacing to designer.</td></tr>
+      <tr><td>Templates</td><td>templates/*.json</td><td>Designer</td><td>generate.js, brainstorm agent (V3)</td><td>Section order and brief key mappings. Composable in V3.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Story performance fields — seeded from day one</h3>
+  <div class="tree">
+    {<br/>
+    &nbsp;&nbsp;"company": "Acme Corp",<br/>
+    &nbsp;&nbsp;"role": "Senior Product Designer",<br/>
+    &nbsp;&nbsp;"confidence_score": 82,<br/>
+    &nbsp;&nbsp;"template_used": "three-act",<br/>
+    &nbsp;&nbsp;"ds_used": "company", &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← own | company</span><br/>
+    &nbsp;&nbsp;"company_ds_url": "...", &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← null if own DS used</span><br/>
+    &nbsp;&nbsp;<span class="t-done">"stories_used": ["story-id-1", "story-id-2"],</span><br/>
+    &nbsp;&nbsp;<span class="t-done">"story_performance": {</span><br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="t-done">"story-id-1": { "shown": 1, "outcome": null },</span><br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="t-done">"story-id-2": { "shown": 1, "outcome": null }</span><br/>
+    &nbsp;&nbsp;<span class="t-done">},</span><br/>
+    &nbsp;&nbsp;<span class="t-done">"outcome": null, &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="t-note">← designer logs manually</span><br/>
+    &nbsp;&nbsp;<span class="t-done">"interview": false,</span><br/>
+    &nbsp;&nbsp;<span class="t-done">"response_received": false,</span><br/>
+    &nbsp;&nbsp;<span class="t-done">"notes": ""</span><br/>
+    }
+  </div>
+</div>
+
+<hr/>
+
+<!-- DESIGN SYSTEM LAYER -->
+<div class="section" id="ds">
+  <span class="eyebrow">05 — Design System Layer</span>
+  <h2>Own DS or company DS</h2>
+  <p>Every application has a design system decision made in the brainstorm and recorded in <code>content_brief.json</code>. The pipeline has two paths. The decision is not hardcoded — it is a runtime parameter the script reads from the brief.</p>
+
+  <div class="ds-decision">
+    <div class="ds-row"><div class="ds-label">brief.design_system: "own"</div><div class="ds-val">Script loads <code>design-system/default.md</code> — the designer's visual system written as codegen instructions. Tokens, typography, tone rules, component patterns. Always present in the repo as the fallback.</div></div>
+    <div class="ds-row"><div class="ds-label">brief.design_system: "company"</div><div class="ds-val">Script reads <code>brief.company_ds_url</code>. At runtime, fetches and extracts tokens (colors, typography, spacing) from the company's public DS. Passes extracted tokens to codegen as a theme layer. No caching — fetched fresh each run. Falls back to default.md if fetch fails or tokens cannot be extracted.</div></div>
+  </div>
+
+  <div class="callout">
+    <strong>Why company DS matters:</strong> consuming Razorpay Blade for a Razorpay application is not a styling choice — it is a signal. The page looks like it was built inside their design system because it was. For design-aware companies, this is the single most differentiating element of the application. No other application tool does this.
+  </div>
+
+  <h3>Fallback chain</h3>
+  <div class="tree">
+    1. Company DS URL provided + tokens extractable &nbsp;&nbsp;&nbsp;→ use company tokens<br/>
+    2. Company DS URL provided + extraction fails &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ warn + use default.md<br/>
+    3. No DS URL provided &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ use default.md<br/>
+    4. default.md missing &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ error: run setup first
+  </div>
+
+  <h3>DS extraction — one focused LLM call</h3>
+  <p>When a company DS URL is in the brief, generate.js runs a single extraction call before codegen:</p>
+  <div class="tree">
+    System: You are a design token extractor.<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Read the content at this URL.<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Extract: primary colors, background colors, typography<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(font families, sizes, weights), border radius, spacing scale,<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and semantic color names.<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Output as a flat codegen instruction file.<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If you cannot extract tokens, say FALLBACK.<br/><br/>
+    Input: [company_ds_url from brief]<br/>
+    Output: DS tokens → passed directly to codegen call
+  </div>
+</div>
+
+<hr/>
+
+<!-- CONFIDENCE SCORER -->
+<div class="section" id="scorer">
+  <span class="eyebrow">06 — Confidence Scorer</span>
+  <h2>Explainable, not arbitrary</h2>
+  <p>The confidence scorer produces an explainable result across seven dimensions. The overall score is a weighted average. Thresholds are designer-configurable via <code>.env</code> — not hardcoded. Roles below the skip threshold are never silently discarded: they surface with the reason and an override prompt.</p>
+
+  <div class="sgrid">
+    <div class="sdim"><div class="sname">Skill Match</div><div class="sdesc">Hard skills listed in JD vs skills in profile.json</div><div class="sw">Weight 20%</div></div>
+    <div class="sdim"><div class="sname">Story Strength</div><div class="sdesc">Do the best stories directly address the JD's top signals</div><div class="sw">Weight 20%</div></div>
+    <div class="sdim"><div class="sname">Industry Match</div><div class="sdesc">Domain overlap — FinTech, B2B SaaS, Consumer, AdTech</div><div class="sw">Weight 15%</div></div>
+    <div class="sdim"><div class="sname">Leadership Match</div><div class="sdesc">Seniority signal — IC vs player-coach vs founding</div><div class="sw">Weight 15%</div></div>
+    <div class="sdim"><div class="sname">Company Stage Fit</div><div class="sdesc">Seed vs growth vs public — experience maps to stage</div><div class="sw">Weight 15%</div></div>
+    <div class="sdim"><div class="sname">Domain Experience</div><div class="sdesc">Depth in specific product category</div><div class="sw">Weight 10%</div></div>
+    <div class="sdim"><div class="sname">Portfolio Relevance</div><div class="sdesc">Published work shows the right kind of output</div><div class="sw">Weight 5%</div></div>
+  </div>
+
+  <h3>Configurable thresholds</h3>
+  <div class="tree">
+    CONFIDENCE_AUTO_SKIP=40 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← below: surface with reason + override prompt</span><br/>
+    CONFIDENCE_AUTO_PROCEED=65 &nbsp;<span class="t-note">← above: proceed to brainstorm automatically</span>
+  </div>
+
+  <div class="callout warn">
+    A highly crafted application can punch above its weight on a low-scoring role. The auto-skip threshold is a starting point, not a rule. Roles below it always reach the designer with the specific gap flags — never disappear silently.
+  </div>
+
+  <h3>Actionable output format</h3>
+  <p>The scorer doesn't just output a number. It outputs an actionable breakdown with a specific recommendation for what to lead with.</p>
+  <div class="scorer-output">
+    <div class="scorer-output-hd">Confidence scorer output — example</div>
+    <div class="scorer-score-row"><div class="scorer-dim-name">Overall</div><div class="scorer-dim-val">82 / 100 → Proceed</div></div>
+    <div class="scorer-score-row"><div class="scorer-dim-name">Skill Match</div><div class="scorer-dim-val">91 / 100</div></div>
+    <div class="scorer-score-row"><div class="scorer-dim-name">Story Strength</div><div class="scorer-dim-val">88 / 100</div></div>
+    <div class="scorer-score-row"><div class="scorer-dim-name">Industry Match</div><div class="scorer-dim-val">85 / 100</div></div>
+    <div class="scorer-score-row"><div class="scorer-dim-name">Leadership Match</div><div class="scorer-dim-val">74 / 100</div></div>
+    <div class="scorer-score-row"><div class="scorer-dim-name">Company Stage Fit</div><div class="scorer-dim-val">80 / 100</div></div>
+    <div class="scorer-score-row"><div class="scorer-dim-name">Domain Experience</div><div class="scorer-dim-val">78 / 100</div></div>
+    <div class="scorer-score-row"><div class="scorer-dim-name">Portfolio Relevance</div><div class="scorer-dim-val">61 / 100 ← weakest</div></div>
+    <div class="scorer-rec"><strong>Top weakness:</strong> Portfolio Relevance — published portfolio doesn't prominently show the right output type for this role.<br/><strong>Recommendation:</strong> Lead with KwikPay SDUI case study. Surface ApplyOS as a builder signal. Do not open with the Joveo story.</div>
+  </div>
+</div>
+
+<hr/>
+
+<!-- ARTIFACT CHAIN -->
+<div class="section" id="artifacts">
+  <span class="eyebrow">07 — Artifact Chain</span>
+  <h2>Every file has a purpose</h2>
+  <p>The pipeline produces a sequence of artifacts. Each one is the input to the next stage. The chain is the system — visible, versionable, and debuggable at every step.</p>
+
+  <table class="tbl">
+    <thead><tr><th>Artifact</th><th>Produced by</th><th>Contains</th><th>Consumed by</th></tr></thead>
+    <tbody>
+      <tr><td>profile.json</td><td>Designer (manual) or profile-builder-prompt (V1+)</td><td>Full career knowledge base. Source of truth.</td><td>Profile matcher, confidence scorer, brainstorm</td></tr>
+      <tr><td>jd_analysis.json</td><td>Phase 1 of brainstorm-prompt (auto)</td><td>Top JD signals, seniority, cultural read, company domain</td><td>Opportunity model generator</td></tr>
+      <tr><td>opportunity_model.json</td><td>Auto — after JD analysis</td><td>Structured company understanding: stage, design maturity, cultural tone, positioning recommendation, public DS URL if found.</td><td>Profile matcher, confidence scorer, brainstorm Phase 2</td></tr>
+      <tr><td>content_brief.json</td><td>Brainstorm Phase 3 (human-approved)</td><td>Three acts locked. DS direction. Template ID. Cold message framing.</td><td>Planner, execution_plan generator</td></tr>
+      <tr><td>execution_plan.json</td><td>generate.js planner stage (auto)</td><td>Exact sections, story excerpts, DS tokens, section order. The build specification. Agents modify this in V3 rather than regenerating from brief.</td><td>Codegen, HTML assembler</td></tr>
+      <tr><td>run.json</td><td>generate.js — written at start of run, updated at each stage</td><td>runId, current stage, status, completedStages, startedAt. Enables pipeline resumption without restarting from zero.</td><td>generate.js — read on --resume flag</td></tr>
+      <tr><td>DS tokens</td><td>Runtime extraction (company DS) or default.md</td><td>Colors, typography, spacing as CSS variables. Extracted from public DS URL or loaded from default. Never saved to disk.</td><td>Codegen, HTML assembler</td></tr>
+      <tr><td>output/[slug]/vN.html</td><td>Codegen + assembler</td><td>Full self-contained HTML page. Versioned on every save.</td><td>File watcher, Vercel deploy</td></tr>
+      <tr><td>applications.json</td><td>generate.js --publish</td><td>Application record with story performance fields seeded.</td><td>Analytics agent, confidence scorer, orchestrator (V2+)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>Why execution_plan.json matters:</strong> in V3, agents modify the plan rather than regenerating the brief. This makes the system more stable — a block change in V3 modifies one field in execution_plan.json and reruns codegen for that section only. Without the plan as an intermediate artifact, any change requires a full regeneration.
+  </div>
+</div>
+
+<hr/>
+
+<!-- GENERATE.JS INTERNALS -->
+<div class="section" id="generate-internals">
+  <span class="eyebrow">07b — generate.js Internals</span>
+  <h2>One file, six responsibilities</h2>
+  <p>generate.js is a single script but it has clearly separated internal modules. Even if everything ships in one file, naming the responsibilities matters — it makes future contributors immediately understand what each part does and where to make changes.</p>
+
+  <div class="gen-internals">
+    <div class="gen-header">generate.js — internal module map</div>
+    <div class="gen-row"><div class="gen-module">Planner</div><div class="gen-what">Reads content_brief.json. Produces execution_plan.json. Writes run.json with initial state. Determines DS path (own or company). The only module that makes decisions.</div></div>
+    <div class="gen-row"><div class="gen-module">Knowledge Loader</div><div class="gen-what">Reads profile.json. Selects the top relevant stories based on the opportunity model signals. Passes a filtered context to codegen — not the full career history.</div></div>
+    <div class="gen-row"><div class="gen-module">DS Loader</div><div class="gen-what">If brief.design_system === "company": fetches the URL, runs the extraction LLM call, returns CSS token block. If "own": reads default.md. Falls back to default.md on any failure. Never saves company DS to disk.</div></div>
+    <div class="gen-row"><div class="gen-module">Codegen</div><div class="gen-what">Calls Claude API with execution_plan + DS tokens + section specs. One call per dynamic section. Returns HTML blocks. Updates run.json stage after each section completes.</div></div>
+    <div class="gen-row"><div class="gen-module">Assembler</div><div class="gen-what">Loads static section files (nav, footer, whats_this). Injects dynamic HTML blocks into slots. Injects DS token block. Injects PostHog snippet with application event tag. Writes output/[slug]/vN.html and current.html.</div></div>
+    <div class="gen-row"><div class="gen-module">Publisher</div><div class="gen-what">On --publish: POSTs current.html to Vercel Deploy API. Receives live URL. Writes to applications.json with story performance fields seeded. Generates cold message via one LLM call. Prints URL + cold message. Marks run.json as complete.</div></div>
+  </div>
+
+  <h3>CLI modes</h3>
+  <div class="tree">
+    generate.js --brainstorm [JD URL] &nbsp;<span class="t-note">← fetch JD + spin up localhost:3000 chat UI (V1.5)</span><br/>
+    generate.js --run [brief.json] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← full pipeline: plan → DS → codegen → preview → watch</span><br/>
+    generate.js --resume &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← read run.json, continue from last completed stage</span><br/>
+    generate.js --deploy [file.html] &nbsp;&nbsp;&nbsp;<span class="t-note">← deploy only, no API key needed</span><br/>
+    generate.js --publish &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← promote preview to live, log, print cold message</span><br/>
+    generate.js --watch &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← file watcher only, no generation</span>
+  </div>
+</div>
+
+<hr/>
+
+<!-- FAILURE RECOVERY -->
+<div class="section" id="failure">
+  <span class="eyebrow">07c — Failure &amp; Recovery</span>
+  <h2>What happens when things break</h2>
+  <p>Every stage of the pipeline can fail. The system needs a defined response to each failure mode: retry, fallback, or manual intervention. run.json makes resumption possible — a failure at codegen does not require restarting from JD analysis.</p>
+
+  <table class="fail-table">
+    <thead><tr><th>Stage</th><th>Failure</th><th>Auto response</th><th>If auto fails</th></tr></thead>
+    <tbody>
+      <tr><td>JD fetch</td><td>URL blocked, requires login, 404</td><td>Retry once with a different user-agent. Surface error with the URL.</td><td>Prompt designer to paste JD text manually. brainstorm.sh accepts text input as fallback.</td></tr>
+      <tr><td>Opportunity model</td><td>LLM call timeout or invalid JSON output</td><td>Retry once. Parse partial output if possible.</td><td>Fall back to raw jd_analysis.json — skip opportunity model, brainstorm reads JD directly.</td></tr>
+      <tr><td>Company DS fetch</td><td>URL 404, extraction returns FALLBACK, tokens incomplete</td><td>Log warning. Automatically fall back to default.md. Never block the pipeline on DS failure.</td><td>N/A — fallback is always available.</td></tr>
+      <tr><td>Codegen — section</td><td>API timeout, context limit exceeded, invalid HTML output</td><td>Retry once with a shorter context. If section fails twice, use a pre-written static fallback for that section type.</td><td>run.json marks stage as partial. Designer can --resume or replace the section manually.</td></tr>
+      <tr><td>HTML assembly</td><td>Missing section file, slot injection fails</td><td>Log which section is missing. Skip it and assemble the rest.</td><td>Print diff of what was skipped. Designer fixes manually before --publish.</td></tr>
+      <tr><td>Vercel deploy</td><td>Auth error, rate limit, network failure</td><td>Retry up to 3 times with exponential backoff.</td><td>Save HTML locally with a timestamp. Print manual deploy instructions. Log as "pending" in applications.json.</td></tr>
+      <tr><td>Full pipeline crash</td><td>Unhandled exception at any stage</td><td>Write current state to run.json before exiting. Log the exact stage and error.</td><td>Designer runs --resume. Pipeline reads run.json and continues from last completed stage.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>run.json — execution state</h3>
+  <div class="tree">
+    {<br/>
+    &nbsp;&nbsp;"runId": "2026-001",<br/>
+    &nbsp;&nbsp;"slug": "acme-senior-designer",<br/>
+    &nbsp;&nbsp;"brief": "briefs/acme-senior-designer.json",<br/>
+    &nbsp;&nbsp;"stage": "codegen", &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← current or last attempted</span><br/>
+    &nbsp;&nbsp;"status": "failed", &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← running | completed | failed | partial</span><br/>
+    &nbsp;&nbsp;"startedAt": "2026-06-27T14:32:00Z",<br/>
+    &nbsp;&nbsp;"completedStages": ["plan","ds-load","knowledge-load"],<br/>
+    &nbsp;&nbsp;"failedStage": "codegen",<br/>
+    &nbsp;&nbsp;"error": "API timeout after 30s on act2_work section",<br/>
+    &nbsp;&nbsp;"resumeFrom": "codegen" &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← generate.js --resume reads this</span><br/>
+    }
+  </div>
+
+  <div class="callout">
+    <strong>The key principle:</strong> no stage reruns a completed stage on resume. If plan and DS load completed, --resume skips directly to codegen. This is how mature pipelines behave.
+  </div>
+</div>
+
+<hr/>
+
+<!-- REPO STRUCTURE -->
+<div class="section" id="repo">
+  <span class="eyebrow">08 — Repo Structure</span>
+  <h2>Every file in one view</h2>
+
+  <div class="tree">
+    <span class="t-dir">applyos/</span><br/>
+    ├── README.md<br/>
+    ├── .env.example &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← ANTHROPIC_API_KEY, VERCEL_TOKEN, thresholds</span><br/>
+    ├── <span class="t-dir">generate.js</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← the only script (6 internal modules)</span><br/>
+    ├── brainstorm.sh &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← assembles prompt + profile + JD, copies to clipboard</span><br/>
+    ├── brainstorm.ps1 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← Windows equivalent</span><br/>
+    │<br/>
+    ├── <span class="t-dir">profile/</span><br/>
+    │&nbsp;&nbsp; ├── <span class="t-done">profile.json</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">✓ built — career knowledge base</span><br/>
+    │&nbsp;&nbsp; ├── profile-template.json &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← blank + instructions for other designers</span><br/>
+    │&nbsp;&nbsp; └── <span class="t-dir">imports/</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← drop resume, LinkedIn export, decks here</span><br/>
+    │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── resume.pdf<br/>
+    │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── linkedin-export.html<br/>
+    │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── case-studies/<br/>
+    │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; └── README.md<br/>
+    │<br/>
+    ├── <span class="t-dir">prompts/</span><br/>
+    │&nbsp;&nbsp; ├── <span class="t-done">brainstorm-prompt.md</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">✓ built — paste into any AI chat</span><br/>
+    │&nbsp;&nbsp; ├── profile-builder-prompt.md &nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← reads import docs → outputs profile.json</span><br/>
+    │&nbsp;&nbsp; ├── codegen-prompt.md &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← used by generate.js via Claude API</span><br/>
+    │&nbsp;&nbsp; └── tweak-prompt.md &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← helper for manual tweaks in any tool</span><br/>
+    │<br/>
+    ├── <span class="t-dir">design-system/</span><br/>
+    │&nbsp;&nbsp; ├── default.md &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← designer's visual system as codegen instructions</span><br/>
+    │&nbsp;&nbsp; └── user.css &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← blank override file — gitignored</span><br/>
+    │&nbsp;&nbsp; <span class="t-note">← no company DS files saved — fetched at runtime, discarded after</span><br/>
+    │<br/>
+    ├── <span class="t-dir">templates/</span><br/>
+    │&nbsp;&nbsp; ├── <span class="t-dir">sections/</span><br/>
+    │&nbsp;&nbsp; │&nbsp;&nbsp; ├── nav.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← static — never touched by LLM</span><br/>
+    │&nbsp;&nbsp; │&nbsp;&nbsp; ├── footer.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← static</span><br/>
+    │&nbsp;&nbsp; │&nbsp;&nbsp; ├── whats_this.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← static — explains ApplyOS on every page</span><br/>
+    │&nbsp;&nbsp; │&nbsp;&nbsp; ├── act1_hero.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← slot-based — codegen fills</span><br/>
+    │&nbsp;&nbsp; │&nbsp;&nbsp; ├── act2_work.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← slot-based</span><br/>
+    │&nbsp;&nbsp; │&nbsp;&nbsp; ├── act3_bring.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← slot-based</span><br/>
+    │&nbsp;&nbsp; │&nbsp;&nbsp; ├── signal_cards.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← slot-based</span><br/>
+    │&nbsp;&nbsp; │&nbsp;&nbsp; └── direct_cta.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← one slot for URL</span><br/>
+    │&nbsp;&nbsp; ├── three-act.json<br/>
+    │&nbsp;&nbsp; ├── single-statement.json<br/>
+    │&nbsp;&nbsp; ├── work-first.json<br/>
+    │&nbsp;&nbsp; └── README.md &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← how to build a custom template</span><br/>
+    │<br/>
+    ├── <span class="t-dir">briefs/</span><br/>
+    │&nbsp;&nbsp; ├── example-brief.json &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← fictional company, shows schema only</span><br/>
+    │&nbsp;&nbsp; └── README.md<br/>
+    │<br/>
+    ├── <span class="t-dir">output/</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← gitignored — auto-created per application</span><br/>
+    │&nbsp;&nbsp; └── [company-role]/<br/>
+    │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── v1.html, v2.html, v3.html<br/>
+    │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; └── current.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← file watcher watches this</span><br/>
+    │<br/>
+    └── <span class="t-dir">applications/</span><br/>
+    &nbsp;&nbsp;&nbsp;&nbsp; └── applications.json &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← auto-written, grows with every deploy</span>
+  </div>
+</div>
+
+<hr/>
+
+<!-- BUILD STATUS -->
+<div class="section" id="status">
+  <span class="eyebrow">09 — Build Status</span>
+  <h2>Where we are today</h2>
+  <div class="blist">
+    <div class="bitem"><div class="bcheck ok">✓</div><div class="binfo"><div class="bname">profile.json <span class="chip chip-done">done</span></div><div class="bdesc">Full career data, case studies, signals, tone rules. Story performance fields seeded. Living artifact.</div></div></div>
+    <div class="bitem"><div class="bcheck ok">✓</div><div class="binfo"><div class="bname">brainstorm-prompt.md <span class="chip chip-done">done</span></div><div class="bdesc">v2 — three-act structure with DS direction. Phase 1 auto-analysis, Phase 2 brainstorm, Phase 3 brief output. Tool agnostic.</div></div></div>
+    <div class="bitem"><div class="bcheck ok">✓</div><div class="binfo"><div class="bname">example-brief.json <span class="chip chip-done">done</span></div><div class="bdesc">Company-agnostic example showing the content_brief schema. Fictional company. Clearly labelled.</div></div></div>
+    <div class="bitem"><div class="bcheck">→</div><div class="binfo"><div class="bname">default.md <span class="chip chip-next">build next — blocker</span></div><div class="bdesc">Visual system as codegen instructions. Blocks codegen-prompt until complete. Critical path item 1.</div></div></div>
+    <div class="bitem"><div class="bcheck">→</div><div class="binfo"><div class="bname">templates/sections/*.html <span class="chip chip-next">build next</span></div><div class="bdesc">8 section files. 3 static, 5 slot-based. Building blocks that generate.js assembles.</div></div></div>
+    <div class="bitem"><div class="bcheck">→</div><div class="binfo"><div class="bname">templates/*.json <span class="chip chip-next">build next</span></div><div class="bdesc">three-act, single-statement, work-first. Section order definitions.</div></div></div>
+    <div class="bitem"><div class="bcheck">→</div><div class="binfo"><div class="bname">codegen-prompt.md <span class="chip chip-next">build next</span></div><div class="bdesc">Reads execution_plan.json + DS tokens + section specs. Outputs HTML per dynamic section.</div></div></div>
+    <div class="bitem"><div class="bcheck">→</div><div class="binfo"><div class="bname">generate.js <span class="chip chip-next">build next</span></div><div class="bdesc">--run: planner → DS fetch/load → codegen → assemble → preview → file watcher. --publish: promote → log → cold message. File watcher redeploys on every save of current.html.</div></div></div>
+    <div class="bitem"><div class="bcheck">·</div><div class="binfo"><div class="bname">profile-builder-prompt.md <span class="chip chip-plan">V1</span></div><div class="bdesc">Reads resume, LinkedIn export, case study decks. Outputs profile.json in 20 minutes. Reduces onboarding friction for other designers.</div></div></div>
+    <div class="bitem"><div class="bcheck">·</div><div class="binfo"><div class="bname">profile-template.json <span class="chip chip-plan">V1</span></div><div class="bdesc">Blank profile.json with field-by-field instructions for other designers.</div></div></div>
+    <div class="bitem"><div class="bcheck">·</div><div class="binfo"><div class="bname">README.md <span class="chip chip-plan">V1</span></div><div class="bdesc">Full setup guide written for a designer, not a developer. The open-source onboarding document.</div></div></div>
+  </div>
+  <div class="callout"><strong>Critical path:</strong> default.md → section HTML files → codegen-prompt.md → generate.js. In that order. Everything else can ship after the first working deployment.</div>
+</div>
+
+<hr/>
+
+<!-- ════ EXECUTION MODES ════ -->
+<div class="section" id="exec-modes">
+  <span class="eyebrow">09b — Execution Modes</span>
+  <h2>Five ways to run ApplyOS</h2>
+  <p>The pipeline is identical in every mode. What changes is where the brainstorm happens, how much is automated, and whether an API key is required. Choose the mode that fits your constraints — they can be mixed across applications.</p>
+
+  <div class="mode-grid">
+    <div class="mode-card"><div class="mode-tag">Fallback Mode</div><div class="mode-title">Zero cost, 2 pastes</div><div class="mode-desc">brainstorm.sh + free AI chat for brainstorm. Manual codegen call in same chat. generate.js --deploy only — no API key needed anywhere.</div><div class="mode-stats"><div class="mode-stat"><div class="mode-stat-k">Cost</div><div class="mode-stat-v">$0</div></div><div class="mode-stat"><div class="mode-stat-k">Pastes</div><div class="mode-stat-v">2</div></div><div class="mode-stat"><div class="mode-stat-k">Key</div><div class="mode-stat-v">None</div></div></div></div>
+    <div class="mode-card rec"><div class="mode-tag">Hybrid Mode ★ recommended</div><div class="mode-title">Low cost, 1 paste</div><div class="mode-desc">brainstorm.sh + free AI chat for brainstorm. generate.js --run for codegen + deploy via API. Best balance of cost, friction, and tool freedom.</div><div class="mode-stats" style="border-color:rgba(255,255,255,.2)"><div class="mode-stat" style="border-color:rgba(255,255,255,.2)"><div class="mode-stat-k" style="color:rgba(255,255,255,.5)">Cost</div><div class="mode-stat-v" style="color:#fff">~$0.10</div></div><div class="mode-stat" style="border-color:rgba(255,255,255,.2)"><div class="mode-stat-k" style="color:rgba(255,255,255,.5)">Pastes</div><div class="mode-stat-v" style="color:#fff">1</div></div><div class="mode-stat" style="border-color:rgba(255,255,255,.2)"><div class="mode-stat-k" style="color:rgba(255,255,255,.5)">Key</div><div class="mode-stat-v" style="color:#fff">Codegen</div></div></div></div>
+    <div class="mode-card"><div class="mode-tag">Local Studio</div><div class="mode-title">Smoothest, 0 pastes</div><div class="mode-desc">generate.js --brainstorm spins up localhost:3000 chat UI. Brainstorm and codegen both via API. No clipboard, no tool switching.</div><div class="mode-stats"><div class="mode-stat"><div class="mode-stat-k">Cost</div><div class="mode-stat-v">~$0.12</div></div><div class="mode-stat"><div class="mode-stat-k">Pastes</div><div class="mode-stat-v">0</div></div><div class="mode-stat"><div class="mode-stat-k">Key</div><div class="mode-stat-v">Both</div></div></div></div>
+    <div class="mode-card"><div class="mode-tag">Private Mode</div><div class="mode-title">Local model, 0 cost</div><div class="mode-desc">Same as Hybrid or Local Studio but AI_BASE_URL points to Ollama. No external API, no cost, full privacy. Quality depends on local model.</div><div class="mode-stats"><div class="mode-stat"><div class="mode-stat-k">Cost</div><div class="mode-stat-v">$0</div></div><div class="mode-stat"><div class="mode-stat-k">Pastes</div><div class="mode-stat-v">0–1</div></div><div class="mode-stat"><div class="mode-stat-k">Key</div><div class="mode-stat-v">None</div></div></div></div>
+    <div class="mode-card"><div class="mode-tag">Platform Mode</div><div class="mode-title">V2 SaaS, async review</div><div class="mode-desc">Crawler surfaces roles. Orchestrator runs full pipeline autonomously. Designer reviews a draft brief and preview, then clicks Approve. No live conversation.</div><div class="mode-stats"><div class="mode-stat"><div class="mode-stat-k">Cost</div><div class="mode-stat-v">Sub</div></div><div class="mode-stat"><div class="mode-stat-k">Pastes</div><div class="mode-stat-v">0</div></div><div class="mode-stat"><div class="mode-stat-k">Key</div><div class="mode-stat-v">Platform</div></div></div></div>
+  </div>
+</div>
+
+<!-- HYBRID MODE DETAIL -->
+<div class="section" id="mode-fallback">
+  <span class="eyebrow">Fallback Mode — step by step</span>
+  <h2>Zero cost, fully manual</h2>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-where">Terminal</div><div class="step-what">Run <strong>./brainstorm.sh [JD URL]</strong> — fetches JD, assembles prompt + profile.json + JD, copies to clipboard</div><div class="step-effort auto">automatic</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-where">Any free AI chat</div><div class="step-what"><strong>Paste 1</strong> — full assembled prompt. Phase 1 analysis runs, brainstorm begins</div><div class="step-effort human">1 paste</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-where">Same chat</div><div class="step-what">Brainstorm conversation — three acts agreed, DS direction decided, brief approved</div><div class="step-effort human">conversation</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-where">Designer</div><div class="step-what">Copy content_brief.json output → save to briefs/[slug].json</div><div class="step-effort human">1 copy/save</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-where">Same or new free chat</div><div class="step-what"><strong>Paste 2</strong> — codegen-prompt.md + content_brief.json + default.md</div><div class="step-effort human">1 paste</div></div>
+    <div class="step"><div class="step-num">6</div><div class="step-where">Designer</div><div class="step-what">Copy HTML output → save as output/[slug]/current.html</div><div class="step-effort human">1 copy/save</div></div>
+    <div class="step"><div class="step-num">7</div><div class="step-where">Terminal</div><div class="step-what">Run <strong>generate.js --deploy output/[slug]/current.html</strong> — Vercel upload only, no API key</div><div class="step-effort auto">automatic</div></div>
+    <div class="step"><div class="step-num">8</div><div class="step-where">Browser</div><div class="step-what">Review preview. Tweak by editing and re-uploading if needed</div><div class="step-effort human">optional</div></div>
+    <div class="step"><div class="step-num">9</div><div class="step-where">Terminal</div><div class="step-what">Run <strong>generate.js --publish</strong> — live URL + cold message printed</div><div class="step-effort auto">automatic</div></div>
+  </div>
+  <div class="sum-strip">
+    <div class="sstat"><div class="sstat-k">Pastes</div><div class="sstat-v">2</div><div class="sstat-s">prompt in, HTML out</div></div>
+    <div class="sstat"><div class="sstat-k">Cost</div><div class="sstat-v">$0.00</div><div class="sstat-s">no API key anywhere</div></div>
+    <div class="sstat"><div class="sstat-k">Time</div><div class="sstat-v">~15 min</div><div class="sstat-s">mostly the conversation</div></div>
+    <div class="sstat"><div class="sstat-k">Tool lock-in</div><div class="sstat-v">None</div><div class="sstat-s">any AI chat</div></div>
+  </div>
+</div>
+
+<div class="section" id="mode-hybrid">
+  <span class="eyebrow">Hybrid Mode — step by step</span>
+  <h2>Recommended — 1 paste, ~$0.10</h2>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-where">Terminal</div><div class="step-what">Run <strong>./brainstorm.sh [JD URL]</strong> — fetches JD, assembles everything, copies to clipboard</div><div class="step-effort auto">automatic</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-where">Any free AI chat</div><div class="step-what"><strong>Paste 1 of 1</strong> — full assembled prompt. This is the only manual paste in the entire workflow</div><div class="step-effort human">1 paste</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-where">Same chat</div><div class="step-what">Brainstorm — Phase 1 analysis shown, Phase 2 proposal, designer refines three acts and DS direction, locks</div><div class="step-effort human">conversation</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-where">Designer</div><div class="step-what">Copy content_brief.json → save to briefs/[slug].json</div><div class="step-effort human">1 copy/save</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-where">Terminal</div><div class="step-what">Run <strong>generate.js --run briefs/[slug].json</strong> — planner, DS fetch, codegen, assemble, preview deploy, file watcher</div><div class="step-effort auto">automatic</div></div>
+    <div class="step"><div class="step-num">6</div><div class="step-where">Browser + any editor</div><div class="step-what">Review preview. Edit current.html in any tool — watcher redeploys on save automatically</div><div class="step-effort human">optional</div></div>
+    <div class="step"><div class="step-num">7</div><div class="step-where">Terminal</div><div class="step-what">Run <strong>generate.js --publish</strong> — live URL + cold message printed. Done.</div><div class="step-effort auto">automatic</div></div>
+  </div>
+  <div class="sum-strip">
+    <div class="sstat"><div class="sstat-k">Pastes</div><div class="sstat-v">1</div><div class="sstat-s">brainstorm prompt only</div></div>
+    <div class="sstat"><div class="sstat-k">Cost</div><div class="sstat-v">~$0.10</div><div class="sstat-s">codegen API call only</div></div>
+    <div class="sstat"><div class="sstat-k">Time</div><div class="sstat-v">~10 min</div><div class="sstat-s">mostly the conversation</div></div>
+    <div class="sstat"><div class="sstat-k">Tool lock-in</div><div class="sstat-v">Partial</div><div class="sstat-s">codegen needs Anthropic key</div></div>
+  </div>
+</div>
+
+<div class="section" id="mode-studio">
+  <span class="eyebrow">Local Studio — step by step</span>
+  <h2>Zero pastes, smoothest UX</h2>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-where">Terminal</div><div class="step-what">Run <strong>generate.js --brainstorm [JD URL]</strong> — fetches JD, opens localhost:3000 automatically</div><div class="step-effort auto">automatic</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-where">localhost:3000</div><div class="step-what">Phase 1 analysis already shown — JD signals, opportunity model, confidence score, DS detection</div><div class="step-effort auto">automatic</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-where">localhost:3000 chat</div><div class="step-what">Designer chats to refine three acts. No pasting — just conversation in a browser input box</div><div class="step-effort human">conversation</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-where">localhost:3000</div><div class="step-what">Click <strong>Lock Brief</strong> — UI extracts content_brief.json automatically, saves to briefs/</div><div class="step-effort human">1 click</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-where">Background</div><div class="step-what">Codegen kicks off automatically on lock — planner, DS, codegen, assemble, preview deploy</div><div class="step-effort auto">automatic</div></div>
+    <div class="step"><div class="step-num">6</div><div class="step-where">Browser — new tab</div><div class="step-what">Preview URL opens automatically. File watcher running.</div><div class="step-effort auto">automatic</div></div>
+    <div class="step"><div class="step-num">7</div><div class="step-where">Any editor</div><div class="step-what">Tweak current.html if needed — watcher redeploys on save</div><div class="step-effort human">optional</div></div>
+    <div class="step"><div class="step-num">8</div><div class="step-where">localhost:3000 or terminal</div><div class="step-what">Click <strong>Publish</strong> or run --publish — live URL + cold message</div><div class="step-effort human">1 click</div></div>
+  </div>
+  <div class="sum-strip">
+    <div class="sstat"><div class="sstat-k">Pastes</div><div class="sstat-v">0</div><div class="sstat-s">everything in-browser</div></div>
+    <div class="sstat"><div class="sstat-k">Cost</div><div class="sstat-v">~$0.12</div><div class="sstat-s">brainstorm + codegen</div></div>
+    <div class="sstat"><div class="sstat-k">Time</div><div class="sstat-v">~8 min</div><div class="sstat-s">fastest per-application</div></div>
+    <div class="sstat"><div class="sstat-k">Build note</div><div class="sstat-v">V1.5</div><div class="sstat-s">after MVP pipeline works</div></div>
+  </div>
+</div>
+
+<div class="section" id="mode-private">
+  <span class="eyebrow">Private Mode</span>
+  <h2>Local model, no external API</h2>
+  <p>Same flow as Hybrid or Local Studio. One change in <code>.env</code> points generate.js at a locally running Ollama model instead of the Anthropic API. No data leaves the machine.</p>
+  <div class="tree">
+    One-time setup:<br/>
+    &nbsp;&nbsp;Install Ollama → ollama.ai<br/>
+    &nbsp;&nbsp;Pull model → ollama pull llama3<br/>
+    &nbsp;&nbsp;Set in .env:<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;AI_BASE_URL=http://localhost:11434/v1<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;AI_MODEL=llama3<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;ANTHROPIC_API_KEY= &nbsp;&nbsp;&nbsp;&nbsp;<span class="t-note">← leave blank</span><br/><br/>
+    Per application: identical to Hybrid Mode or Local Studio.
+  </div>
+  <div class="callout warn"><strong>Trade-off:</strong> output quality depends on the local model. The brainstorm — the highest-judgment step — benefits most from a frontier model. This path is for privacy-first or zero-budget designers who accept that quality trade-off.</div>
+</div>
+
+<div class="section" id="mode-platform">
+  <span class="eyebrow">Platform Mode — V2 SaaS</span>
+  <h2>Async review, no live conversation</h2>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-where">Background — scheduled</div><div class="step-what">Crawler finds a new role matching designer profile criteria. Confidence scorer evaluates. Above threshold: proceeds.</div><div class="step-effort auto">automatic</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-where">Background</div><div class="step-what">Opportunity model built. Profile matcher selects top 10 stories. Orchestrator produces draft content_brief.json and preview page.</div><div class="step-effort auto">automatic</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-where">Notification</div><div class="step-what">Designer notified: "New role — Senior Designer at Acme. Confidence 78. Preview ready." Link to draft brief + preview.</div><div class="step-effort human">review notification</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-where">Platform UI or MCP chat</div><div class="step-what">Designer reviews draft. Approves as-is or redirects specific fields — "change hero angle", "swap lead story".</div><div class="step-effort human">review + optional edits</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-where">Platform UI</div><div class="step-what">Click <strong>Approve and publish</strong> — live URL generated, cold message ready.</div><div class="step-effort human">1 click</div></div>
+  </div>
+  <div class="sum-strip">
+    <div class="sstat"><div class="sstat-k">Pastes</div><div class="sstat-v">0</div><div class="sstat-s">review and click only</div></div>
+    <div class="sstat"><div class="sstat-k">Cost</div><div class="sstat-v">Included</div><div class="sstat-s">Tier 3 subscription</div></div>
+    <div class="sstat"><div class="sstat-k">Time</div><div class="sstat-v">~3 min</div><div class="sstat-s">review only</div></div>
+    <div class="sstat"><div class="sstat-k">Available</div><div class="sstat-v">V2</div><div class="sstat-s">after agent layer built</div></div>
+  </div>
+  <div class="callout warn"><strong>Important distinction:</strong> Platform Mode replaces the live brainstorm conversation with async review of a machine-generated draft. This works well once the system has enough story performance data to make good first proposals. It should not be the first mode built — it requires V2 agents and a mature learning loop.</div>
+</div>
+
+<hr/>
+
+<!-- ════ MVP ════ -->
+<div class="section" id="mvp">
+  <span class="vbadge filled">MVP</span>
+  <span class="eyebrow">10 — MVP</span>
+  <h2>Prove it works</h2>
+  <p>The MVP is a reproducible workflow. One designer, one JD, one deployed page, one cold message. The success metric is simple: a designer who has never used ApplyOS can clone the repo, fill their profile, run the brainstorm in any AI chat, run one command, and get a live URL — in one afternoon, unassisted.</p>
+</div>
+
+<div class="section" id="mvp-flow">
+  <span class="eyebrow">10.1 — MVP User Flow</span>
+  <h2>End to end</h2>
+  <div class="flow-wrap">
+<!-- MVP FLOW SVG — strict 40px row grid, 3 column centres at 140, 400, 640 -->
+<svg width="780" height="900" viewBox="0 0 780 900" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace">
+<defs>
+  <marker id="m1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#0a0a0a"/></marker>
+  <marker id="m1g" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#aaaaaa"/></marker>
+</defs>
+
+<!-- Column headers -->
+<rect x="0" y="0" width="780" height="32" fill="#f6f6f6"/>
+<line x1="0" y1="32" x2="780" y2="32" stroke="#d8d8d8" stroke-width="1"/>
+<text x="140" y="20" text-anchor="middle" font-size="8" letter-spacing="2" fill="#aaaaaa">DESIGNER</text>
+<text x="400" y="20" text-anchor="middle" font-size="8" letter-spacing="2" fill="#aaaaaa">SYSTEM / AI</text>
+<text x="640" y="20" text-anchor="middle" font-size="8" letter-spacing="2" fill="#aaaaaa">ARTIFACTS</text>
+<line x1="270" y1="0" x2="270" y2="900" stroke="#d8d8d8" stroke-width="1"/>
+<line x1="520" y1="0" x2="520" y2="900" stroke="#d8d8d8" stroke-width="1"/>
+
+<!-- ROW 1 y=52 → 104: Clone repo -->
+<rect x="50" y="52" width="180" height="44" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="140" y="72" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Clone repo</text>
+<text x="140" y="87" text-anchor="middle" font-size="9" fill="#7a7a7a">github.com/applyos</text>
+<rect x="530" y="60" width="200" height="28" fill="none" stroke="#d8d8d8" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="630" y="78" text-anchor="middle" font-size="9" fill="#aaaaaa">README.md · profile-template.json</text>
+<line x1="230" y1="74" x2="528" y2="74" stroke="#aaaaaa" stroke-width="1" marker-end="url(#m1g)"/>
+
+<!-- vertical -->
+<line x1="140" y1="96" x2="140" y2="112" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+
+<!-- ROW 2 y=112 → 172: Import docs -->
+<rect x="50" y="112" width="180" height="52" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="140" y="132" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Drop import files</text>
+<text x="140" y="147" text-anchor="middle" font-size="9" fill="#7a7a7a">resume · LinkedIn export</text>
+<text x="140" y="160" text-anchor="middle" font-size="9" fill="#7a7a7a">case study decks</text>
+<rect x="280" y="112" width="200" height="52" fill="#0a0a0a"/>
+<text x="380" y="132" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">profile-builder-prompt</text>
+<text x="380" y="147" text-anchor="middle" font-size="9" fill="#aaaaaa">reads all docs in any AI</text>
+<text x="380" y="160" text-anchor="middle" font-size="9" fill="#aaaaaa">maps to schema</text>
+<rect x="530" y="120" width="200" height="36" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="630" y="139" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">profile.json</text>
+<text x="630" y="153" text-anchor="middle" font-size="9" fill="#7a7a7a">career knowledge base</text>
+<line x1="230" y1="138" x2="278" y2="138" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+<line x1="480" y1="138" x2="528" y2="138" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+
+<!-- vertical -->
+<line x1="140" y1="164" x2="140" y2="180" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+
+<!-- ROW 3 y=180 → 228: Review profile — HUMAN GATE -->
+<text x="325" y="178" text-anchor="middle" font-size="7" letter-spacing="1.5" fill="#aaaaaa">HUMAN GATE</text>
+<rect x="50" y="180" width="180" height="44" fill="#ffffff" stroke="#0a0a0a" stroke-width="2"/>
+<text x="140" y="200" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Review profile.json</text>
+<text x="140" y="215" text-anchor="middle" font-size="9" fill="#7a7a7a">correct any errors · approve</text>
+
+<!-- vertical -->
+<line x1="140" y1="224" x2="140" y2="240" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+
+<!-- ROW 4 y=240 → 296: Paste JD -->
+<rect x="50" y="240" width="180" height="44" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="140" y="260" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Paste JD URL</text>
+<text x="140" y="275" text-anchor="middle" font-size="9" fill="#7a7a7a">+ brainstorm-prompt.md</text>
+<rect x="280" y="240" width="200" height="52" fill="#0a0a0a"/>
+<text x="380" y="260" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Phase 1 — Auto</text>
+<text x="380" y="275" text-anchor="middle" font-size="9" fill="#aaaaaa">JD scrape · logo fetch</text>
+<text x="380" y="288" text-anchor="middle" font-size="9" fill="#aaaaaa">profile match · score · DS check</text>
+<rect x="530" y="248" width="200" height="36" fill="none" stroke="#d8d8d8" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="630" y="263" text-anchor="middle" font-size="9" fill="#aaaaaa">jd_analysis.json</text>
+<text x="630" y="278" text-anchor="middle" font-size="9" fill="#aaaaaa">confidence_score · logo_url · ds_url</text>
+<line x1="230" y1="264" x2="278" y2="264" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+<line x1="480" y1="264" x2="528" y2="264" stroke="#aaaaaa" stroke-width="1" marker-end="url(#m1g)"/>
+
+<!-- vertical + return arrow for brainstorm -->
+<line x1="380" y1="292" x2="380" y2="312" stroke="#0a0a0a" stroke-width="1"/>
+<line x1="380" y1="312" x2="142" y2="312" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+
+<!-- ROW 5 y=316 → 384: Brainstorm — HUMAN GATE -->
+<text x="325" y="314" text-anchor="middle" font-size="7" letter-spacing="1.5" fill="#aaaaaa">HUMAN GATE</text>
+<rect x="50" y="316" width="180" height="68" fill="#ffffff" stroke="#0a0a0a" stroke-width="2"/>
+<text x="140" y="336" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Brainstorm</text>
+<text x="140" y="351" text-anchor="middle" font-size="9" fill="#7a7a7a">Act 1 emphasis</text>
+<text x="140" y="364" text-anchor="middle" font-size="9" fill="#7a7a7a">Act 2 works + framing</text>
+<text x="140" y="377" text-anchor="middle" font-size="9" fill="#7a7a7a">Act 3 · DS direction</text>
+<rect x="280" y="316" width="200" height="68" fill="#0a0a0a"/>
+<text x="380" y="336" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Phase 2 — Propose</text>
+<text x="380" y="351" text-anchor="middle" font-size="9" fill="#aaaaaa">hero angle · template</text>
+<text x="380" y="364" text-anchor="middle" font-size="9" fill="#aaaaaa">own DS or company DS</text>
+<text x="380" y="377" text-anchor="middle" font-size="9" fill="#aaaaaa">cold message framing</text>
+<rect x="530" y="324" width="200" height="36" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="630" y="339" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">content_brief.json</text>
+<text x="630" y="354" text-anchor="middle" font-size="9" fill="#7a7a7a">three acts · DS decision locked</text>
+<line x1="230" y1="350" x2="278" y2="350" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+<line x1="480" y1="350" x2="528" y2="350" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+
+<!-- vertical -->
+<line x1="140" y1="384" x2="140" y2="400" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+
+<!-- ROW 6 y=400 → 456: generate.js --run -->
+<rect x="50" y="400" width="180" height="44" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="140" y="420" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">node generate.js</text>
+<text x="140" y="435" text-anchor="middle" font-size="9" fill="#7a7a7a">briefs/your-brief.json</text>
+<rect x="280" y="400" width="200" height="68" fill="#0a0a0a"/>
+<text x="380" y="418" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Planner</text>
+<text x="380" y="433" text-anchor="middle" font-size="9" fill="#aaaaaa">reads brief → execution_plan.json</text>
+<text x="380" y="446" text-anchor="middle" font-size="9" fill="#aaaaaa">fetches company DS or loads default</text>
+<text x="380" y="459" text-anchor="middle" font-size="9" fill="#aaaaaa">codegen → assemble → preview</text>
+<rect x="530" y="400" width="200" height="60" fill="none" stroke="#d8d8d8" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="630" y="418" text-anchor="middle" font-size="9" fill="#aaaaaa">execution_plan.json</text>
+<text x="630" y="433" text-anchor="middle" font-size="9" fill="#aaaaaa">DS tokens (runtime)</text>
+<text x="630" y="448" text-anchor="middle" font-size="9" fill="#aaaaaa">output/[slug]/v1.html</text>
+<text x="630" y="455" text-anchor="middle" font-size="9" fill="#aaaaaa">preview.vercel.app · watcher on</text>
+<line x1="230" y1="434" x2="278" y2="434" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+<line x1="480" y1="430" x2="528" y2="430" stroke="#aaaaaa" stroke-width="1" marker-end="url(#m1g)"/>
+
+<!-- vertical -->
+<line x1="140" y1="444" x2="140" y2="484" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+
+<!-- ROW 7 y=484 → 548: Review + tweak — HUMAN GATE -->
+<text x="325" y="482" text-anchor="middle" font-size="7" letter-spacing="1.5" fill="#aaaaaa">HUMAN GATE</text>
+<rect x="50" y="484" width="180" height="60" fill="#ffffff" stroke="#0a0a0a" stroke-width="2"/>
+<text x="140" y="504" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Review preview</text>
+<text x="140" y="519" text-anchor="middle" font-size="9" fill="#7a7a7a">edit current.html in any tool</text>
+<text x="140" y="532" text-anchor="middle" font-size="9" fill="#7a7a7a">Claude · Cursor · direct edit</text>
+<rect x="280" y="484" width="200" height="60" fill="#0a0a0a"/>
+<text x="380" y="504" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">File watcher</text>
+<text x="380" y="519" text-anchor="middle" font-size="9" fill="#aaaaaa">detects save → redeploys preview</text>
+<text x="380" y="532" text-anchor="middle" font-size="9" fill="#aaaaaa">tool agnostic — any editor works</text>
+<rect x="530" y="492" width="200" height="36" fill="none" stroke="#d8d8d8" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="630" y="508" text-anchor="middle" font-size="9" fill="#aaaaaa">output/[slug]/v2.html</text>
+<text x="630" y="523" text-anchor="middle" font-size="9" fill="#aaaaaa">versioned automatically</text>
+<line x1="480" y1="512" x2="528" y2="512" stroke="#aaaaaa" stroke-width="1" marker-end="url(#m1g)"/>
+
+<!-- vertical -->
+<line x1="140" y1="544" x2="140" y2="560" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+
+<!-- ROW 8 y=560 → 608: Publish -->
+<rect x="50" y="560" width="180" height="44" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="140" y="580" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">node generate.js</text>
+<text x="140" y="595" text-anchor="middle" font-size="9" fill="#7a7a7a">--publish</text>
+<rect x="280" y="560" width="200" height="44" fill="#0a0a0a"/>
+<text x="380" y="580" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Deploy + log</text>
+<text x="380" y="595" text-anchor="middle" font-size="9" fill="#aaaaaa">promote to live URL · write log</text>
+<rect x="530" y="568" width="200" height="36" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="630" y="584" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">applications.json</text>
+<text x="630" y="599" text-anchor="middle" font-size="9" fill="#7a7a7a">story performance fields seeded</text>
+<line x1="230" y1="582" x2="278" y2="582" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+<line x1="480" y1="582" x2="528" y2="582" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+
+<!-- vertical -->
+<line x1="140" y1="604" x2="140" y2="620" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+
+<!-- ROW 9 y=620 → 676: Output -->
+<rect x="50" y="620" width="180" height="52" fill="#0a0a0a"/>
+<text x="140" y="642" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Output</text>
+<text x="140" y="657" text-anchor="middle" font-size="9" fill="#aaaaaa">live URL + cold message</text>
+<text x="140" y="670" text-anchor="middle" font-size="9" fill="#aaaaaa">printed in terminal</text>
+<rect x="530" y="628" width="200" height="36" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="630" y="644" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">yourname.co/[slug]</text>
+<text x="630" y="659" text-anchor="middle" font-size="9" fill="#7a7a7a">PostHog analytics active</text>
+<line x1="480" y1="644" x2="528" y2="644" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m1)"/>
+
+<!-- legend -->
+<rect x="50" y="710" width="12" height="12" fill="#0a0a0a"/>
+<text x="68" y="721" font-size="9" fill="#7a7a7a">Automated step</text>
+<rect x="180" y="710" width="12" height="12" fill="#ffffff" stroke="#0a0a0a" stroke-width="2"/>
+<text x="198" y="721" font-size="9" fill="#7a7a7a">Human gate</text>
+<rect x="300" y="710" width="12" height="12" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="318" y="721" font-size="9" fill="#7a7a7a">Designer action</text>
+<rect x="430" y="710" width="12" height="12" fill="#ffffff" stroke="#d8d8d8" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="448" y="721" font-size="9" fill="#7a7a7a">Artifact / file</text>
+<rect x="540" y="710" width="12" height="12" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="558" y="721" font-size="9" fill="#7a7a7a">Committed artifact</text>
+</svg>
+  </div>
+</div>
+
+<div class="section" id="v1-build">
+  <span class="eyebrow">11.2 — V1 Build List</span>
+  <h2>Six things to build</h2>
+  <div class="blist">
+    <div class="bitem"><div class="bcheck">1</div><div class="binfo"><div class="bname">default.md</div><div class="bdesc">Designer's visual system as codegen instructions. Tokens, typography, tone rules, component patterns. Written for LLM consumption. The fallback DS for all applications.</div></div></div>
+    <div class="bitem"><div class="bcheck">2</div><div class="binfo"><div class="bname">templates/sections/ — 8 files</div><div class="bdesc">nav, footer, whats_this (static — never touched by LLM). act1_hero, act2_work, act3_bring, signal_cards, direct_cta (slot-based — codegen fills slots).</div></div></div>
+    <div class="bitem"><div class="bcheck">3</div><div class="binfo"><div class="bname">templates/*.json — 3 files</div><div class="bdesc">three-act.json, single-statement.json, work-first.json. Section order and brief key mappings. Selectable in brainstorm, used by generate.js planner.</div></div></div>
+    <div class="bitem"><div class="bcheck">4</div><div class="binfo"><div class="bname">codegen-prompt.md</div><div class="bdesc">Reads execution_plan.json + DS tokens + section specs. Outputs HTML for each dynamic section. Called by generate.js via Claude API.</div></div></div>
+    <div class="bitem"><div class="bcheck">5</div><div class="binfo"><div class="bname">generate.js</div><div class="bdesc">Two modes. --run: read brief → produce execution_plan → fetch/load DS → call codegen → assemble HTML → preview deploy → start file watcher. --publish: promote current.html to live URL → log to applications.json → print cold message → stop watcher.</div></div></div>
+    <div class="bitem"><div class="bcheck">6</div><div class="binfo"><div class="bname">.env.example + README (rough draft)</div><div class="bdesc">ANTHROPIC_API_KEY, VERCEL_TOKEN, CONFIDENCE thresholds. README: setup in under 10 steps, two commands. Polished in V1.</div></div></div>
+  </div>
+</div>
+
+<hr/>
+
+<!-- ════ V1 ════ -->
+<div class="section" id="v1">
+  <span class="vbadge">V1 — Open Source</span>
+  <span class="eyebrow">11 — V1</span>
+  <h2>Any designer can run this</h2>
+  <p>V1 takes the working MVP and makes it usable by any designer. The repo is polished, the profile builder prompt reduces onboarding from two hours to twenty minutes, and the template system is documented well enough for a non-developer to extend. V1 is the open-source release — the prompts are the product.</p>
+</div>
+
+<div class="section" id="v1-profile">
+  <span class="eyebrow">11.1 — Profile Building</span>
+  <h2>Three stages across versions</h2>
+  <div class="g3" style="max-width:680px">
+    <div class="gc"><div class="gc-tag">MVP — Manual</div><div class="gc-title">Fill template by hand</div><div class="gc-desc">Designer fills profile-template.json directly. Field-by-field instructions. Takes 2 hours. Works but creates friction for other designers.</div></div>
+    <div class="gc" style="border:2px solid #0a0a0a"><div class="gc-tag">V1 — Document import</div><div class="gc-title">Drop files, run prompt</div><div class="gc-desc">Drop resume, LinkedIn export, case study decks into imports/. Run profile-builder-prompt.md in any AI. profile.json generated in 20 minutes. Onboarding unlocked.</div></div>
+    <div class="gc"><div class="gc-tag">V2 — Live sync</div><div class="gc-title">Profile agent watches sources</div><div class="gc-desc">LinkedIn, Behance, Dribbble, Contra, Medium, X synced weekly. Designer approves staged changes before anything merges. Profile compounds automatically.</div></div>
+  </div>
+</div>
+
+<div class="section" id="v1-flow">
+  <span class="eyebrow">11.2 — V1 User Flow</span>
+  <h2>Same pipeline, lower friction</h2>
+  <div class="flow-wrap">
+<svg width="780" height="740" viewBox="0 0 780 740" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace">
+<defs>
+  <marker id="m2" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#0a0a0a"/></marker>
+  <marker id="m2g" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#aaaaaa"/></marker>
+</defs>
+<rect x="0" y="0" width="780" height="32" fill="#f6f6f6"/>
+<line x1="0" y1="32" x2="780" y2="32" stroke="#d8d8d8" stroke-width="1"/>
+<text x="140" y="20" text-anchor="middle" font-size="8" letter-spacing="2" fill="#aaaaaa">DESIGNER</text>
+<text x="400" y="20" text-anchor="middle" font-size="8" letter-spacing="2" fill="#aaaaaa">SYSTEM / AI</text>
+<text x="640" y="20" text-anchor="middle" font-size="8" letter-spacing="2" fill="#aaaaaa">ARTIFACTS</text>
+<line x1="270" y1="0" x2="270" y2="740" stroke="#d8d8d8" stroke-width="1"/>
+<line x1="520" y1="0" x2="520" y2="740" stroke="#d8d8d8" stroke-width="1"/>
+
+<!-- profile builder (20 min) -->
+<rect x="50" y="48" width="180" height="52" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="140" y="68" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Drop import files</text>
+<text x="140" y="83" text-anchor="middle" font-size="9" fill="#7a7a7a">resume · LinkedIn · Behance</text>
+<text x="140" y="96" text-anchor="middle" font-size="9" fill="#7a7a7a">case study decks</text>
+<rect x="280" y="48" width="200" height="52" fill="#0a0a0a"/>
+<text x="380" y="68" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">profile-builder-prompt</text>
+<text x="380" y="83" text-anchor="middle" font-size="9" fill="#aaaaaa">reads all docs in any AI</text>
+<text x="380" y="96" text-anchor="middle" font-size="9" fill="#aaaaaa">maps to schema · 20 minutes</text>
+<rect x="530" y="56" width="200" height="36" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="630" y="72" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">profile.json</text>
+<text x="630" y="87" text-anchor="middle" font-size="9" fill="#7a7a7a">generated in 20 min</text>
+<line x1="230" y1="74" x2="278" y2="74" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+<line x1="480" y1="74" x2="528" y2="74" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+<line x1="140" y1="100" x2="140" y2="116" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+
+<!-- review gate -->
+<text x="325" y="114" text-anchor="middle" font-size="7" letter-spacing="1.5" fill="#aaaaaa">HUMAN GATE</text>
+<rect x="50" y="116" width="180" height="44" fill="#ffffff" stroke="#0a0a0a" stroke-width="2"/>
+<text x="140" y="136" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Review profile.json</text>
+<text x="140" y="151" text-anchor="middle" font-size="9" fill="#7a7a7a">correct · approve</text>
+<line x1="140" y1="160" x2="140" y2="176" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+
+<!-- optional customise -->
+<rect x="50" y="176" width="180" height="52" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="140" y="196" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Optional: customise</text>
+<text x="140" y="211" text-anchor="middle" font-size="9" fill="#7a7a7a">edit user.css · pick template</text>
+<text x="140" y="224" text-anchor="middle" font-size="9" fill="#7a7a7a">build custom template</text>
+<rect x="530" y="184" width="200" height="36" fill="none" stroke="#d8d8d8" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="630" y="200" text-anchor="middle" font-size="9" fill="#aaaaaa">user.css · templates/[name].json</text>
+<text x="630" y="215" text-anchor="middle" font-size="9" fill="#aaaaaa">own or company DS decided here</text>
+<line x1="230" y1="202" x2="528" y2="202" stroke="#aaaaaa" stroke-width="1" marker-end="url(#m2g)"/>
+<line x1="140" y1="228" x2="140" y2="244" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+
+<!-- JD + brainstorm -->
+<rect x="50" y="244" width="180" height="44" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="140" y="264" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Paste JD URL</text>
+<text x="140" y="279" text-anchor="middle" font-size="9" fill="#7a7a7a">+ brainstorm-prompt.md</text>
+<rect x="280" y="244" width="200" height="52" fill="#0a0a0a"/>
+<text x="380" y="264" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Phase 1 + 2</text>
+<text x="380" y="279" text-anchor="middle" font-size="9" fill="#aaaaaa">analysis → brainstorm</text>
+<text x="380" y="292" text-anchor="middle" font-size="9" fill="#aaaaaa">DS direction decided</text>
+<rect x="530" y="252" width="200" height="36" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="630" y="268" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">content_brief.json</text>
+<text x="630" y="283" text-anchor="middle" font-size="9" fill="#7a7a7a">three acts · DS direction</text>
+<line x1="230" y1="268" x2="278" y2="268" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+<line x1="480" y1="268" x2="528" y2="268" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+<line x1="140" y1="296" x2="140" y2="316" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+
+<!-- generate -->
+<rect x="50" y="316" width="180" height="44" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="140" y="336" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">node generate.js</text>
+<text x="140" y="351" text-anchor="middle" font-size="9" fill="#7a7a7a">--run · brief.json</text>
+<rect x="280" y="316" width="200" height="60" fill="#0a0a0a"/>
+<text x="380" y="336" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Full pipeline</text>
+<text x="380" y="351" text-anchor="middle" font-size="9" fill="#aaaaaa">planner → DS fetch/load</text>
+<text x="380" y="364" text-anchor="middle" font-size="9" fill="#aaaaaa">codegen → assemble → preview</text>
+<text x="380" y="377" text-anchor="middle" font-size="9" fill="#aaaaaa">file watcher on</text>
+<rect x="530" y="324" width="200" height="44" fill="none" stroke="#d8d8d8" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="630" y="340" text-anchor="middle" font-size="9" fill="#aaaaaa">output/[slug]/v1.html</text>
+<text x="630" y="355" text-anchor="middle" font-size="9" fill="#aaaaaa">preview · watcher running</text>
+<text x="630" y="362" text-anchor="middle" font-size="9" fill="#aaaaaa">DS tokens applied (own or fetched)</text>
+<line x1="230" y1="346" x2="278" y2="346" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+<line x1="480" y1="346" x2="528" y2="346" stroke="#aaaaaa" stroke-width="1" marker-end="url(#m2g)"/>
+<line x1="140" y1="376" x2="140" y2="396" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+
+<!-- review tweak -->
+<text x="325" y="394" text-anchor="middle" font-size="7" letter-spacing="1.5" fill="#aaaaaa">HUMAN GATE</text>
+<rect x="50" y="396" width="180" height="52" fill="#ffffff" stroke="#0a0a0a" stroke-width="2"/>
+<text x="140" y="416" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Review + tweak</text>
+<text x="140" y="431" text-anchor="middle" font-size="9" fill="#7a7a7a">edit in any tool · watcher redeploys</text>
+<text x="140" y="444" text-anchor="middle" font-size="9" fill="#7a7a7a">versions accumulate in output/</text>
+<line x1="140" y1="448" x2="140" y2="468" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+
+<!-- publish -->
+<rect x="50" y="468" width="180" height="44" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="140" y="488" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">node generate.js</text>
+<text x="140" y="503" text-anchor="middle" font-size="9" fill="#7a7a7a">--publish</text>
+<rect x="280" y="468" width="200" height="44" fill="#0a0a0a"/>
+<text x="380" y="488" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Deploy + log</text>
+<text x="380" y="503" text-anchor="middle" font-size="9" fill="#aaaaaa">promote · log · cold message</text>
+<rect x="530" y="476" width="200" height="36" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="630" y="492" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">applications.json</text>
+<text x="630" y="507" text-anchor="middle" font-size="9" fill="#7a7a7a">story performance seeded</text>
+<line x1="230" y1="490" x2="278" y2="490" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+<line x1="480" y1="490" x2="528" y2="490" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+<line x1="140" y1="512" x2="140" y2="532" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+
+<!-- output -->
+<rect x="50" y="532" width="180" height="52" fill="#0a0a0a"/>
+<text x="140" y="552" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Live URL + cold message</text>
+<text x="140" y="567" text-anchor="middle" font-size="9" fill="#aaaaaa">PostHog active · log outcome later</text>
+<text x="140" y="580" text-anchor="middle" font-size="9" fill="#aaaaaa">profile gets richer → next app better</text>
+
+<!-- weekly analytics -->
+<rect x="280" y="532" width="200" height="52" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="380" y="552" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Weekly: review PostHog</text>
+<text x="380" y="567" text-anchor="middle" font-size="9" fill="#7a7a7a">paste summary into chat</text>
+<text x="380" y="580" text-anchor="middle" font-size="9" fill="#7a7a7a">log outcomes manually</text>
+<rect x="530" y="540" width="200" height="36" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="630" y="556" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">applications.json</text>
+<text x="630" y="571" text-anchor="middle" font-size="9" fill="#7a7a7a">story performance growing</text>
+<line x1="230" y1="558" x2="278" y2="558" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+<line x1="480" y1="558" x2="528" y2="558" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m2)"/>
+
+<!-- loop back arrow — profile gets richer -->
+<line x1="630" y1="576" x2="630" y2="620" stroke="#0a0a0a" stroke-width="1" stroke-dasharray="4,3"/>
+<line x1="630" y1="620" x2="30" y2="620" stroke="#0a0a0a" stroke-width="1" stroke-dasharray="4,3"/>
+<line x1="30" y1="620" x2="30" y2="100" stroke="#0a0a0a" stroke-width="1" stroke-dasharray="4,3"/>
+<line x1="30" y1="100" x2="48" y2="100" stroke="#0a0a0a" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#m2)"/>
+<text x="390" y="637" text-anchor="middle" font-size="8" fill="#aaaaaa">profile grows richer · next application improves</text>
+</svg>
+  </div>
+</div>
+
+<div class="section" id="v1-inherits">
+  <span class="eyebrow">11.3 — Inheritance</span>
+  <h2>MVP → V1</h2>
+  <div class="iblock">
+    <div class="ihead">What carries forward and how it changes</div>
+    <div class="irow"><div class="iwhat">profile.json</div><div class="ihow">Unchanged. profile-builder-prompt now populates it from documents. profile-template.json extracted from it for other designers.</div></div>
+    <div class="irow"><div class="iwhat">brainstorm-prompt.md</div><div class="ihow">Unchanged. Works for any designer who has filled profile.json.</div></div>
+    <div class="irow"><div class="iwhat">generate.js</div><div class="ihow">Minor update: PostHog injection added. output/ versioning added. user.css loaded as DS override layer. Core logic unchanged.</div></div>
+    <div class="irow"><div class="iwhat">Section HTML files</div><div class="ihow">Unchanged. user.css added as override layer on top. No HTML edits required.</div></div>
+    <div class="irow"><div class="iwhat">Template JSONs</div><div class="ihow">work-first.json added. templates/README.md documents how to build custom templates.</div></div>
+    <div class="irow"><div class="iwhat">applications.json</div><div class="ihow">Story performance fields now actively logged by designer after each outcome. Data begins to accumulate.</div></div>
+    <div class="irow"><div class="iwhat">DS decision logic</div><div class="ihow">Unchanged. default.md + runtime fetch path both stable. No caching added — fetch fresh, discard after.</div></div>
+  </div>
+</div>
+
+<hr/>
+
+<!-- ════ V2 ════ -->
+<div class="section" id="v2">
+  <span class="vbadge">V2 — Multi-Agent</span>
+  <span class="eyebrow">12 — V2</span>
+  <h2>The autonomous layer</h2>
+  <p>V2 introduces five specialised agents with genuine autonomy and parallelism. The orchestrator acts as a planner — it creates an execution graph, not a sequential dispatch list. JD analysis, company intelligence, and profile matching run in parallel and merge before the planning and writing stages.</p>
+  <p>V2 is also where the system approaches true Agentic RAG: the orchestrator dynamically retrieves only the context it needs from the knowledge layer rather than reading all files on every run.</p>
+</div>
+
+<div class="section" id="v2-agents">
+  <span class="eyebrow">12.1 — Agent Roster</span>
+  <h2>Five agents, genuinely parallel</h2>
+  <table class="tbl">
+    <thead><tr><th>Agent</th><th>Type</th><th>Goal</th><th>Reads</th><th>Writes</th></tr></thead>
+    <tbody>
+      <tr><td>Orchestrator</td><td>Planner</td><td>Create execution graph. Delegate to agents in parallel. Gate on confidence. Report to designer.</td><td>next_steps.md, applications.json (partial retrieval)</td><td>Execution logs</td></tr>
+      <tr><td>Crawler</td><td>Scout — scheduled</td><td>Find new roles matching designer profile. Deduplicate. Surface qualified leads.</td><td>crawler_seen.json, profile.json (criteria)</td><td>crawler_seen.json</td></tr>
+      <tr><td>Profile Agent</td><td>Sync — scheduled</td><td>Watch LinkedIn, Behance, Dribbble, Contra, Medium, X. Stage changes for designer approval before merging.</td><td>profile.json (current)</td><td>profile.json (staged)</td></tr>
+      <tr><td>Confidence Scorer</td><td>Scoring — parallel</td><td>Score role across 7 dimensions. Surface skips with reason — never discard silently.</td><td>profile.json, applications.json (outcomes)</td><td>Confidence log</td></tr>
+      <tr><td>Analytics Agent</td><td>Learning — weekly</td><td>Read PostHog + applications.json. Identify which stories convert. Update next_steps.md.</td><td>applications.json, PostHog API</td><td>next_steps.md</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section" id="v2-flow">
+  <span class="eyebrow">12.2 — V2 User Flow</span>
+  <h2>Autonomous discovery, human narrative</h2>
+  <div class="flow-wrap">
+<svg width="780" height="800" viewBox="0 0 780 800" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace">
+<defs>
+  <marker id="m3" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#0a0a0a"/></marker>
+  <marker id="m3g" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#aaaaaa"/></marker>
+</defs>
+<rect x="0" y="0" width="780" height="32" fill="#f6f6f6"/>
+<line x1="0" y1="32" x2="780" y2="32" stroke="#d8d8d8" stroke-width="1"/>
+<text x="140" y="20" text-anchor="middle" font-size="8" letter-spacing="2" fill="#aaaaaa">DESIGNER</text>
+<text x="400" y="20" text-anchor="middle" font-size="8" letter-spacing="2" fill="#aaaaaa">AGENTS (PARALLEL)</text>
+<text x="640" y="20" text-anchor="middle" font-size="8" letter-spacing="2" fill="#aaaaaa">KNOWLEDGE LAYER</text>
+<line x1="270" y1="0" x2="270" y2="800" stroke="#d8d8d8" stroke-width="1"/>
+<line x1="520" y1="0" x2="520" y2="800" stroke="#d8d8d8" stroke-width="1"/>
+
+<!-- Crawler runs autonomously -->
+<rect x="280" y="48" width="200" height="44" fill="#0a0a0a"/>
+<text x="380" y="68" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Crawler agent</text>
+<text x="380" y="83" text-anchor="middle" font-size="9" fill="#aaaaaa">runs every 24–48h — autonomous</text>
+<rect x="530" y="56" width="200" height="28" fill="none" stroke="#d8d8d8" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="630" y="75" text-anchor="middle" font-size="9" fill="#aaaaaa">crawler_seen.json · new JD URLs</text>
+<line x1="480" y1="70" x2="528" y2="70" stroke="#aaaaaa" stroke-width="1" marker-end="url(#m3g)"/>
+
+<!-- Profile agent parallel -->
+<rect x="280" y="108" width="200" height="44" fill="#0a0a0a"/>
+<text x="380" y="128" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Profile agent</text>
+<text x="380" y="143" text-anchor="middle" font-size="9" fill="#aaaaaa">LinkedIn · Behance · Contra — weekly</text>
+
+<!-- designer approves profile update -->
+<text x="140" y="106" text-anchor="middle" font-size="7" letter-spacing="1.5" fill="#aaaaaa">HUMAN GATE</text>
+<rect x="50" y="108" width="180" height="44" fill="#ffffff" stroke="#0a0a0a" stroke-width="2"/>
+<text x="140" y="128" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Approve profile update</text>
+<text x="140" y="143" text-anchor="middle" font-size="9" fill="#7a7a7a">or skip</text>
+<line x1="480" y1="130" x2="222" y2="130" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m3)"/>
+<rect x="530" y="116" width="200" height="28" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="630" y="135" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">profile.json</text>
+<text x="630" y="135" text-anchor="middle" font-size="9" fill="#7a7a7a">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;updated</text>
+<line x1="480" y1="130" x2="528" y2="130" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m3)"/>
+
+<!-- Orchestrator -->
+<line x1="380" y1="152" x2="380" y2="172" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m3)"/>
+<rect x="280" y="172" width="200" height="60" fill="#0a0a0a"/>
+<text x="380" y="192" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Orchestrator</text>
+<text x="380" y="207" text-anchor="middle" font-size="9" fill="#aaaaaa">reads next_steps.md</text>
+<text x="380" y="220" text-anchor="middle" font-size="9" fill="#aaaaaa">creates execution graph</text>
+<rect x="530" y="180" width="200" height="44" fill="none" stroke="#d8d8d8" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="630" y="196" text-anchor="middle" font-size="9" fill="#aaaaaa">next_steps.md · applications.json</text>
+<text x="630" y="211" text-anchor="middle" font-size="9" fill="#aaaaaa">profile.json (partial retrieval)</text>
+<line x1="528" y1="202" x2="482" y2="202" stroke="#aaaaaa" stroke-width="1" marker-end="url(#m3g)"/>
+
+<!-- Two parallel agents -->
+<line x1="380" y1="232" x2="380" y2="248" stroke="#0a0a0a" stroke-width="1"/>
+<line x1="320" y1="248" x2="440" y2="248" stroke="#0a0a0a" stroke-width="1"/>
+<line x1="320" y1="248" x2="320" y2="260" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m3)"/>
+<line x1="440" y1="248" x2="440" y2="260" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m3)"/>
+
+<rect x="280" y="260" width="80" height="60" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="320" y="280" text-anchor="middle" font-size="9" font-weight="600" fill="#0a0a0a">Confidence</text>
+<text x="320" y="293" text-anchor="middle" font-size="9" font-weight="600" fill="#0a0a0a">Scorer</text>
+<text x="320" y="310" text-anchor="middle" font-size="8" fill="#7a7a7a">7 dimensions</text>
+
+<rect x="380" y="260" width="100" height="60" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="430" y="280" text-anchor="middle" font-size="9" font-weight="600" fill="#0a0a0a">Company</text>
+<text x="430" y="293" text-anchor="middle" font-size="9" font-weight="600" fill="#0a0a0a">Intelligence</text>
+<text x="430" y="310" text-anchor="middle" font-size="8" fill="#7a7a7a">funding · tone · DS</text>
+
+<!-- merge lines -->
+<line x1="320" y1="320" x2="320" y2="340" stroke="#0a0a0a" stroke-width="1"/>
+<line x1="430" y1="320" x2="430" y2="340" stroke="#0a0a0a" stroke-width="1"/>
+<line x1="320" y1="340" x2="430" y2="340" stroke="#0a0a0a" stroke-width="1"/>
+<line x1="375" y1="340" x2="375" y2="356" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m3)"/>
+
+<!-- skip path -->
+<line x1="280" y1="290" x2="232" y2="290" stroke="#aaaaaa" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#m3g)"/>
+<rect x="50" y="270" width="180" height="44" fill="#f6f6f6" stroke="#d8d8d8" stroke-width="1"/>
+<text x="140" y="290" text-anchor="middle" font-size="9" fill="#7a7a7a">Score &lt;40: surface to designer</text>
+<text x="140" y="305" text-anchor="middle" font-size="9" fill="#7a7a7a">with reason + override prompt</text>
+
+<!-- brainstorm gate -->
+<text x="325" y="354" text-anchor="middle" font-size="7" letter-spacing="1.5" fill="#aaaaaa">HUMAN GATE</text>
+<rect x="50" y="356" width="180" height="52" fill="#ffffff" stroke="#0a0a0a" stroke-width="2"/>
+<text x="140" y="376" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Brainstorm</text>
+<text x="140" y="391" text-anchor="middle" font-size="9" fill="#7a7a7a">three acts · DS direction</text>
+<text x="140" y="404" text-anchor="middle" font-size="9" fill="#7a7a7a">richer with company intel</text>
+<rect x="280" y="356" width="200" height="52" fill="#0a0a0a"/>
+<text x="380" y="376" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Phase 2 — enriched</text>
+<text x="380" y="391" text-anchor="middle" font-size="9" fill="#aaaaaa">company DS auto-detected</text>
+<text x="380" y="404" text-anchor="middle" font-size="9" fill="#aaaaaa">company intel injected</text>
+<rect x="530" y="364" width="200" height="36" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="630" y="380" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">content_brief.json</text>
+<text x="630" y="395" text-anchor="middle" font-size="9" fill="#7a7a7a">DS direction confirmed</text>
+<line x1="375" y1="356" x2="142" y2="356" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m3)"/>
+<line x1="230" y1="382" x2="278" y2="382" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m3)"/>
+<line x1="480" y1="382" x2="528" y2="382" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m3)"/>
+
+<!-- generate -->
+<line x1="140" y1="408" x2="140" y2="428" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m3)"/>
+<rect x="50" y="428" width="180" height="44" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="140" y="448" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">generate.js --run</text>
+<text x="140" y="463" text-anchor="middle" font-size="9" fill="#7a7a7a">now callable as API endpoint</text>
+<rect x="280" y="428" width="200" height="52" fill="#0a0a0a"/>
+<text x="380" y="448" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Full pipeline</text>
+<text x="380" y="463" text-anchor="middle" font-size="9" fill="#aaaaaa">planner → DS fetch → codegen</text>
+<text x="380" y="476" text-anchor="middle" font-size="9" fill="#aaaaaa">assemble → preview → watcher</text>
+<line x1="230" y1="454" x2="278" y2="454" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m3)"/>
+
+<!-- output + analytics loop -->
+<line x1="140" y1="480" x2="140" y2="512" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m3)"/>
+<rect x="50" y="512" width="180" height="52" fill="#0a0a0a"/>
+<text x="140" y="532" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Live URL + cold message</text>
+<text x="140" y="547" text-anchor="middle" font-size="9" fill="#aaaaaa">Log outcome when known</text>
+<text x="140" y="560" text-anchor="middle" font-size="9" fill="#aaaaaa">story performance tracked</text>
+
+<rect x="280" y="512" width="200" height="60" fill="#0a0a0a"/>
+<text x="380" y="532" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Analytics agent — weekly</text>
+<text x="380" y="547" text-anchor="middle" font-size="9" fill="#aaaaaa">reads PostHog API</text>
+<text x="380" y="560" text-anchor="middle" font-size="9" fill="#aaaaaa">story A: 6/18 interviews</text>
+<text x="380" y="573" text-anchor="middle" font-size="9" fill="#aaaaaa">writes next_steps.md</text>
+
+<rect x="530" y="520" width="200" height="44" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="630" y="536" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">next_steps.md</text>
+<text x="630" y="551" text-anchor="middle" font-size="9" fill="#7a7a7a">which stories convert</text>
+<text x="630" y="558" text-anchor="middle" font-size="9" fill="#7a7a7a">what DS resonates</text>
+<line x1="480" y1="542" x2="528" y2="542" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m3)"/>
+
+<!-- loop back -->
+<line x1="630" y1="564" x2="630" y2="640" stroke="#0a0a0a" stroke-width="1" stroke-dasharray="4,3"/>
+<line x1="630" y1="640" x2="310" y2="640" stroke="#0a0a0a" stroke-width="1" stroke-dasharray="4,3"/>
+<line x1="310" y1="640" x2="310" y2="194" stroke="#0a0a0a" stroke-width="1" stroke-dasharray="4,3"/>
+<line x1="310" y1="194" x2="282" y2="194" stroke="#0a0a0a" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#m3)"/>
+<text x="460" y="656" text-anchor="middle" font-size="8" fill="#aaaaaa">orchestrator learns → next run improves automatically</text>
+</svg>
+  </div>
+</div>
+
+<div class="section" id="v2-platform">
+  <span class="eyebrow">12.3 — Platform Tiers</span>
+  <h2>Three tiers, one pipeline</h2>
+  <div class="g3" style="max-width:680px">
+    <div class="gc"><div class="gc-tag">Tier 1 — Free forever</div><div class="gc-title">Open source repo</div><div class="gc-desc">The GitHub repo. Bring your own API keys. No UI, no account, no support. The community tier. This is the distribution engine.</div></div>
+    <div class="gc"><div class="gc-tag">Tier 2 — Platform</div><div class="gc-title">Bring your own AI</div><div class="gc-desc">Web UI: profile management, brief history, application tracking, template builder. Connect your own Claude API key. You pay for platform, not AI. High margin.</div></div>
+    <div class="gc"><div class="gc-tag">Tier 3 — Full stack</div><div class="gc-title">AI included + MCP</div><div class="gc-desc">Everything in Tier 2. AI costs covered. Crawler automatic. Analytics digest in chat via MCP. Pipeline runs invisibly behind Claude conversation.</div></div>
+  </div>
+</div>
+
+<div class="section" id="v2-inherits">
+  <span class="eyebrow">12.4 — Inheritance</span>
+  <h2>V1 → V2</h2>
+  <div class="iblock">
+    <div class="ihead">What carries forward and how it changes</div>
+    <div class="irow"><div class="iwhat">profile.json schema</div><div class="ihow">Unchanged. Now read by 4 agents instead of 1. Profile agent adds a staged write path — approval required before any merge.</div></div>
+    <div class="irow"><div class="iwhat">brainstorm-prompt.md</div><div class="ihow">Updated: confidence score + company intelligence (including detected public DS) injected before Phase 2. Richer context, same structure.</div></div>
+    <div class="irow"><div class="iwhat">generate.js</div><div class="ihow">Becomes an API endpoint. Same logic, now callable by orchestrator programmatically as well as by designer in terminal.</div></div>
+    <div class="irow"><div class="iwhat">DS decision logic</div><div class="ihow">Company intelligence agent now detects public DS automatically and adds company_ds_url to the brief if found. Designer confirms in brainstorm.</div></div>
+    <div class="irow"><div class="iwhat">Template system</div><div class="ihow">Used as-is. Template recommendation added to confidence scorer output.</div></div>
+    <div class="irow"><div class="iwhat">applications.json</div><div class="ihow">Upgraded from log to active memory. Story performance now read by confidence scorer and analytics agent to improve future runs.</div></div>
+    <div class="irow"><div class="iwhat">PostHog integration</div><div class="ihow">Now read programmatically by analytics agent via PostHog API. No longer manual review only.</div></div>
+  </div>
+</div>
+
+<hr/>
+
+<!-- ════ V3 ════ -->
+<div class="section" id="v3">
+  <span class="vbadge">V3 — Composable Pages</span>
+  <span class="eyebrow">13 — V3</span>
+  <h2>The page as a decision</h2>
+  <p>V3 replaces template selection with template generation. The brainstorm agent produces a <code>page_schema.json</code> in addition to the content brief — a structural decision about which blocks to include, in what order, in what format. The page structure itself is generated per application, not picked from a list.</p>
+  <p>V3 also introduces layout reasoning: the planner doesn't ask "which template?" — it asks "what narrative structure fits this company, this role, this designer?" An essay-style narrative for a founder. Evidence-first for an engineering culture. Cinematic and minimal for a design-forward company.</p>
+  <div class="callout warn">
+    <strong>Aesthetic risk:</strong> as block types multiply and the agent gains structural control, the risk of diluting a curated aesthetic increases. The designer approval gate on page_schema.json is the quality guardrail. No block is added without sign-off. Control over the rendering layer is essential.
+  </div>
+</div>
+
+<div class="section" id="v3-flow">
+  <span class="eyebrow">13.1 — V3 User Flow</span>
+  <h2>Layout reasoning, same pipeline</h2>
+  <div class="flow-wrap">
+<svg width="780" height="680" viewBox="0 0 780 680" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace">
+<defs>
+  <marker id="m4" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#0a0a0a"/></marker>
+  <marker id="m4g" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#aaaaaa"/></marker>
+</defs>
+<rect x="0" y="0" width="780" height="32" fill="#f6f6f6"/>
+<line x1="0" y1="32" x2="780" y2="32" stroke="#d8d8d8" stroke-width="1"/>
+<text x="140" y="20" text-anchor="middle" font-size="8" letter-spacing="2" fill="#aaaaaa">DESIGNER</text>
+<text x="400" y="20" text-anchor="middle" font-size="8" letter-spacing="2" fill="#aaaaaa">AGENTS</text>
+<text x="640" y="20" text-anchor="middle" font-size="8" letter-spacing="2" fill="#aaaaaa">ARTIFACTS</text>
+<line x1="270" y1="0" x2="270" y2="680" stroke="#d8d8d8" stroke-width="1"/>
+<line x1="520" y1="0" x2="520" y2="680" stroke="#d8d8d8" stroke-width="1"/>
+
+<!-- V2 pipeline abbreviated -->
+<rect x="280" y="48" width="200" height="44" fill="#0a0a0a"/>
+<text x="380" y="68" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">V2 agents run</text>
+<text x="380" y="83" text-anchor="middle" font-size="9" fill="#aaaaaa">crawler · confidence · company intel</text>
+<rect x="530" y="56" width="200" height="28" fill="none" stroke="#d8d8d8" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="630" y="75" text-anchor="middle" font-size="9" fill="#aaaaaa">same as V2 — all agents run</text>
+<line x1="480" y1="70" x2="528" y2="70" stroke="#aaaaaa" stroke-width="1" marker-end="url(#m4g)"/>
+
+<!-- Brainstorm produces schema -->
+<line x1="380" y1="92" x2="380" y2="112" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m4)"/>
+<rect x="280" y="112" width="200" height="68" fill="#0a0a0a"/>
+<text x="380" y="132" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Brainstorm — layout reasoning</text>
+<text x="380" y="147" text-anchor="middle" font-size="9" fill="#aaaaaa">proposes page_schema.json</text>
+<text x="380" y="160" text-anchor="middle" font-size="9" fill="#aaaaaa">block types · order · format</text>
+<text x="380" y="173" text-anchor="middle" font-size="9" fill="#aaaaaa">Loom? cards? narrative? timeline?</text>
+<rect x="530" y="120" width="200" height="52" fill="none" stroke="#d8d8d8" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="630" y="138" text-anchor="middle" font-size="9" fill="#aaaaaa">page_schema.json (draft)</text>
+<text x="630" y="153" text-anchor="middle" font-size="9" fill="#aaaaaa">content_brief.json</text>
+<text x="630" y="168" text-anchor="middle" font-size="9" fill="#aaaaaa">block performance history used</text>
+<line x1="480" y1="148" x2="528" y2="148" stroke="#aaaaaa" stroke-width="1" marker-end="url(#m4g)"/>
+
+<!-- human approves schema -->
+<line x1="380" y1="180" x2="380" y2="200" stroke="#0a0a0a" stroke-width="1"/>
+<line x1="380" y1="200" x2="142" y2="200" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m4)"/>
+<text x="325" y="198" text-anchor="middle" font-size="7" letter-spacing="1.5" fill="#aaaaaa">HUMAN GATE</text>
+<rect x="50" y="200" width="180" height="60" fill="#ffffff" stroke="#0a0a0a" stroke-width="2"/>
+<text x="140" y="220" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Approve schema</text>
+<text x="140" y="235" text-anchor="middle" font-size="9" fill="#7a7a7a">add · remove blocks</text>
+<text x="140" y="248" text-anchor="middle" font-size="9" fill="#7a7a7a">reorder · confirm DS</text>
+<rect x="530" y="208" width="200" height="44" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="630" y="224" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">page_schema.json</text>
+<text x="630" y="239" text-anchor="middle" font-size="9" fill="#7a7a7a">approved · locked</text>
+<text x="630" y="246" text-anchor="middle" font-size="9" fill="#7a7a7a">DS direction confirmed</text>
+<line x1="230" y1="230" x2="528" y2="230" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m4)"/>
+
+<!-- generate with schema -->
+<line x1="140" y1="260" x2="140" y2="280" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m4)"/>
+<rect x="50" y="280" width="180" height="44" fill="#f6f6f6" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="140" y="300" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">generate.js --run</text>
+<text x="140" y="315" text-anchor="middle" font-size="9" fill="#7a7a7a">reads page_schema.json</text>
+<rect x="280" y="280" width="200" height="68" fill="#0a0a0a"/>
+<text x="380" y="300" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Composer</text>
+<text x="380" y="315" text-anchor="middle" font-size="9" fill="#aaaaaa">generates each block from schema</text>
+<text x="380" y="328" text-anchor="middle" font-size="9" fill="#aaaaaa">assembles in schema order</text>
+<text x="380" y="341" text-anchor="middle" font-size="9" fill="#aaaaaa">applies DS (own or fetched company)</text>
+<rect x="530" y="288" width="200" height="52" fill="none" stroke="#d8d8d8" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="630" y="304" text-anchor="middle" font-size="9" fill="#aaaaaa">execution_plan.json</text>
+<text x="630" y="319" text-anchor="middle" font-size="9" fill="#aaaaaa">DS tokens (runtime)</text>
+<text x="630" y="334" text-anchor="middle" font-size="9" fill="#aaaaaa">output/[slug]/v1.html · watcher on</text>
+<line x1="230" y1="302" x2="278" y2="302" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m4)"/>
+<line x1="480" y1="316" x2="528" y2="316" stroke="#aaaaaa" stroke-width="1" marker-end="url(#m4g)"/>
+
+<!-- review + publish -->
+<line x1="140" y1="324" x2="140" y2="368" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m4)"/>
+<text x="325" y="366" text-anchor="middle" font-size="7" letter-spacing="1.5" fill="#aaaaaa">HUMAN GATE</text>
+<rect x="50" y="368" width="180" height="44" fill="#ffffff" stroke="#0a0a0a" stroke-width="2"/>
+<text x="140" y="388" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">Review + tweak + publish</text>
+<text x="140" y="403" text-anchor="middle" font-size="9" fill="#7a7a7a">file watcher active</text>
+<line x1="140" y1="412" x2="140" y2="432" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m4)"/>
+
+<!-- output + block learning -->
+<rect x="50" y="432" width="180" height="60" fill="#0a0a0a"/>
+<text x="140" y="452" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Live URL + cold message</text>
+<text x="140" y="467" text-anchor="middle" font-size="9" fill="#aaaaaa">block performance logged</text>
+<text x="140" y="480" text-anchor="middle" font-size="9" fill="#aaaaaa">analytics agent learns</text>
+
+<rect x="280" y="432" width="200" height="60" fill="#0a0a0a"/>
+<text x="380" y="452" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">Analytics agent</text>
+<text x="380" y="467" text-anchor="middle" font-size="9" fill="#aaaaaa">tracks block scroll depth</text>
+<text x="380" y="480" text-anchor="middle" font-size="9" fill="#aaaaaa">which DS resonated</text>
+<text x="380" y="493" text-anchor="middle" font-size="9" fill="#aaaaaa">updates next_steps.md</text>
+
+<rect x="530" y="440" width="200" height="44" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+<text x="630" y="456" text-anchor="middle" font-size="10" font-weight="600" fill="#0a0a0a">applications.json</text>
+<text x="630" y="471" text-anchor="middle" font-size="9" fill="#7a7a7a">block-level performance tracked</text>
+<line x1="220" y1="462" x2="278" y2="462" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m4)"/>
+<line x1="480" y1="462" x2="528" y2="462" stroke="#0a0a0a" stroke-width="1" marker-end="url(#m4)"/>
+
+<!-- loop back -->
+<line x1="630" y1="484" x2="630" y2="560" stroke="#0a0a0a" stroke-width="1" stroke-dasharray="4,3"/>
+<line x1="630" y1="560" x2="310" y2="560" stroke="#0a0a0a" stroke-width="1" stroke-dasharray="4,3"/>
+<line x1="310" y1="560" x2="310" y2="134" stroke="#0a0a0a" stroke-width="1" stroke-dasharray="4,3"/>
+<line x1="310" y1="134" x2="282" y2="134" stroke="#0a0a0a" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#m4)"/>
+<text x="460" y="576" text-anchor="middle" font-size="8" fill="#aaaaaa">block performance → schema generator improves · DS choices learned</text>
+</svg>
+  </div>
+</div>
+
+<div class="section" id="v3-inherits">
+  <span class="eyebrow">13.2 — Inheritance</span>
+  <h2>V2 → V3</h2>
+  <div class="iblock">
+    <div class="ihead">What carries forward and how it changes</div>
+    <div class="irow"><div class="iwhat">All five V2 agents</div><div class="ihow">Unchanged. Brainstorm agent upgraded: now outputs page_schema.json in addition to content_brief.json. Layout reasoning replaces template selection.</div></div>
+    <div class="irow"><div class="iwhat">Section HTML files</div><div class="ihow">Expanded with new block types — Loom embed, metric cluster, testimonial, narrative essay. Existing sections unchanged.</div></div>
+    <div class="irow"><div class="iwhat">Template JSON format</div><div class="ihow">Same schema format. V3 generates it rather than the designer picking one. Fully backward compatible — V1/V2 templates still work.</div></div>
+    <div class="irow"><div class="iwhat">generate.js</div><div class="ihow">Minor update: reads page_schema.json instead of template ID. Assembly logic unchanged.</div></div>
+    <div class="irow"><div class="iwhat">DS decision logic</div><div class="ihow">Unchanged. Block performance data now includes which DS resonated. next_steps.md includes DS recommendations.</div></div>
+    <div class="irow"><div class="iwhat">execution_plan.json</div><div class="ihow">V3 agents modify the plan directly rather than regenerating from the brief. A block change modifies one field and reruns codegen for that section only.</div></div>
+  </div>
+</div>
+
+<hr/>
+
+<!-- STORY MEMORY -->
+<div class="section" id="story">
+  <span class="eyebrow">14 — Story Performance Memory</span>
+  <h2>The moat</h2>
+  <p>The moat is not the landing page generator. It is the learning system that knows which stories convert for which role types, which design systems resonate with which company cultures, and which narrative angles get more time-on-page. This data accumulates from day one and becomes the primary input for confidence scoring and story selection over time.</p>
+  <div class="tree">
+    <span class="t-note"># Example: story performance after 30 applications</span><br/><br/>
+    "story_performance_aggregate": {<br/>
+    &nbsp;&nbsp;"kwikpay-sdui": {<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;"shown": 18, "interviews": 6, "responses": 9, "ghosted": 9,<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;"best_for": ["fintech", "founding", "systems-thinker"],<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;"ds_with": { "own": 10, "company": 8 }<br/>
+    &nbsp;&nbsp;},<br/>
+    &nbsp;&nbsp;"applyos-builder": {<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;"shown": 12, "interviews": 8, "responses": 10, "ghosted": 2,<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;"best_for": ["builder", "ai-native", "product-engineer"],<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;"ds_with": { "own": 4, "company": 8 }<br/>
+    &nbsp;&nbsp;}<br/>
+    }
+  </div>
+  <p>This data is produced automatically by the analytics agent and read by the confidence scorer and brainstorm agent on every subsequent run. The system learns which stories convert and which design system choices land best — not which stories seem impressive in isolation.</p>
+</div>
+
+<hr/>
+
+<!-- PRODUCT TIERS -->
+<div class="section" id="tiers">
+  <span class="eyebrow">15 — Product Tiers</span>
+  <h2>Three tiers, one architecture</h2>
+  <div class="g3" style="max-width:680px">
+    <div class="gc"><div class="gc-tag">Tier 1 — Free forever</div><div class="gc-title">Open source repo</div><div class="gc-desc">The GitHub repo. Bring your own API keys. No UI, no account, no support. The community tier and the distribution engine. The prompts are the product.</div></div>
+    <div class="gc"><div class="gc-tag">Tier 2 — Platform</div><div class="gc-title">Bring your own AI</div><div class="gc-desc">Web UI for profile management, brief history, application tracking, template builder. Connect your own Claude API key. High margin — you pay for platform, not AI.</div></div>
+    <div class="gc"><div class="gc-tag">Tier 3 — Full stack</div><div class="gc-title">AI included</div><div class="gc-desc">Everything in Tier 2. AI costs covered. Crawler automatic. Analytics digest weekly. Studio tier eventually — team seats for design studios applying on behalf of clients.</div></div>
+  </div>
+</div>
+
+<hr/>
+
+<!-- MCP -->
+<div class="section" id="mcp">
+  <span class="eyebrow">16 — MCP Layer</span>
+  <h2>Chat-native — Tier 3 only</h2>
+  <p>MCP (Model Context Protocol) makes ApplyOS feel native inside Claude chat for Tier 3. The pipeline runs invisibly behind the conversation. The MCP connector is a thin wrapper around the same API endpoints generate.js uses — it does not change the pipeline, it removes the manual steps between stages.</p>
+  <p><strong>When to build:</strong> after people are asking "can I run this entirely inside Claude?" Not before. MCP is a distribution layer, not proof of product-market fit. Nobody buys MCP. People buy "I got interviews."</p>
+  <table class="tbl" style="max-width:640px">
+    <thead><tr><th>MCP Tool</th><th>What it does</th><th>Without MCP (open source)</th></tr></thead>
+    <tbody>
+      <tr><td>analyse_jd</td><td>Paste URL in chat, analysis appears immediately</td><td>Run brainstorm-prompt.md manually in any AI</td></tr>
+      <tr><td>generate_page</td><td>Claude calls generate.js endpoint, live URL returned in chat</td><td>node generate.js briefs/brief.json in terminal</td></tr>
+      <tr><td>push_analytics</td><td>Weekly PostHog digest appears in chat automatically</td><td>Manual PostHog review + paste into chat</td></tr>
+      <tr><td>surface_role</td><td>Crawler finds a role, Claude surfaces it in chat with score</td><td>Designer finds roles manually, pastes JD</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<hr/>
+
+<!-- ROADMAP -->
+<div class="section" id="roadmap">
+  <span class="eyebrow">17 — Roadmap</span>
+  <h2>Version by version</h2>
+  <table class="tbl">
+    <thead><tr><th>Version</th><th>Milestone</th><th>Success signal</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td>MVP — Working</td><td>Pipeline end to end. One deployed page from a JD URL. Repo exists with rough README. Story performance fields seeded.</td><td>Designer who has never used ApplyOS can clone, fill profile, deploy in one afternoon unassisted.</td><td>This week</td></tr>
+      <tr><td>MVP — Validated</td><td>10 applications sent. Story performance fields being populated. At least one company DS consumed.</td><td>At least 2 hiring managers open the page for 2+ minutes.</td><td>Week 2</td></tr>
+      <tr><td>V1 — Open source</td><td>profile-builder-prompt live. Repo polished. Templates documented. README thorough. user.css override documented.</td><td>A designer sets up and deploys unassisted in one afternoon.</td><td>Week 3</td></tr>
+      <tr><td>Content launch</td><td>Post about building ApplyOS. Thread, LinkedIn, blog. Link to repo.</td><td>100+ GitHub stars or 500+ impressions. One other designer deploys their first page.</td><td>Week 3</td></tr>
+      <tr><td>V2 — Agents</td><td>All five agents live. Orchestrator as planner. Confidence scorer with 7 dimensions. Company intelligence auto-detects public DS. Story performance data accumulating.</td><td>System surfaces a role not found manually. Story data changes brainstorm recommendations. Company DS auto-detected for a design-aware company.</td><td>Month 2</td></tr>
+      <tr><td>V2 — Platform</td><td>Tier 2 web UI. Profile management, brief history, application tracking.</td><td>10 beta users. 5 deploy without asking for help.</td><td>Month 3–4</td></tr>
+      <tr><td>V2 — Full stack</td><td>Tier 3. AI costs covered. Crawler automatic.</td><td>First paying customers. MRR covers API costs.</td><td>Month 5–6</td></tr>
+      <tr><td>V3 — Composable</td><td>Schema generation. Layout reasoning. Block library expanded. Block performance + DS performance tracked.</td><td>Two applications with different agent-generated structures. Both get opens. DS resonance data informs future choices.</td><td>Month 6+</td></tr>
+      <tr><td>MCP — Tier 3</td><td>MCP connector wrapping generate.js API. Crawler surfaces roles in Claude chat.</td><td>Users ask "can I run this entirely inside Claude?" and the answer is yes.</td><td>After product-market fit confirmed</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</main>
+</div>
+
+<script>
+window.addEventListener('scroll',()=>{
+  const d=document.documentElement;
+  const p=(d.scrollTop||document.body.scrollTop)/(d.scrollHeight-d.clientHeight)*100;
+  document.getElementById('prog').style.width=p+'%';
+});
+const all=document.querySelectorAll('[id]');
+const links=document.querySelectorAll('.sb-link');
+const obs=new IntersectionObserver(e=>{
+  e.forEach(en=>{
+    if(en.isIntersecting)links.forEach(l=>l.classList.toggle('on',l.getAttribute('href')==='#'+en.target.id));
+  });
+},{rootMargin:'-10% 0px -80% 0px'});
+all.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>
